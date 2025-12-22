@@ -101,7 +101,7 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "gemini": model is not None}
+    return {"status": "healthy", "gemini": client is not None}
 
 @app.post("/api/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
@@ -329,7 +329,7 @@ async def search_all_sources(
     Birden fazla hukuki kaynaktan arama yapar.
     sources: Virgülle ayrılmış kaynak listesi (yargitay,danistay,anayasa,rekabet)
     """
-    from services.scraper import YargitayScraper, DanistayScraper, AnayasaMahkemesiScraper, RekabetKurumuScraper
+    from backend.services.scraper import YargitayScraper, DanistayScraper, AnayasaMahkemesiScraper, RekabetKurumuScraper
     import asyncio
     
     source_list = [s.strip().lower() for s in sources.split(",")]
@@ -410,7 +410,7 @@ async def search_all_sources(
 # ============== UYAP UDF FORMAT ==============
 
 from fastapi import UploadFile, File, Form
-from services.udf_generator import udf_generator
+from backend.services.udf_generator import udf_generator
 
 @app.post("/api/dilekce/udf")
 async def create_dilekce_udf(
@@ -501,7 +501,7 @@ async def search_yargitay(query: str, limit: int = 10):
     Yargıtay kararları araması yapar. Scraper çalışmazsa AI devreye girer.
     """
     # 1. Try Scraper first (with short timeout)
-    from services.scraper import YargitayScraper
+    from backend.services.scraper import YargitayScraper
     import asyncio
     
     try:
@@ -529,7 +529,7 @@ async def search_yargitay(query: str, limit: int = 10):
         print(f"General search error: {e}")
 
     # 2. Fallback to Gemini AI
-    if model:
+    if client:
         print(f"Using AI fallback for query: {query}")
         prompt = f"""Türk Hukuku Yargıtay içtihatlarında "{query}" konusuyla ilgili 4 adet emsal karar özeti oluştur.
         Gerçekçi daire isimleri, esas/karar numaraları ve tarihler kullan.
@@ -553,7 +553,7 @@ async def search_yargitay(query: str, limit: int = 10):
             import json
             import re
             
-            json_match = re.search(r'\[[\s\S]*\]', response_text)
+            json_match = re.search(r'\[[\s\S]*\]', response)
             if json_match:
                 ai_results = json.loads(json_match.group())
                 return {
@@ -573,7 +573,7 @@ async def search_yargitay(query: str, limit: int = 10):
 # ============== PDF GENERATION ==============
 
 from fastapi.responses import Response
-from services.pdf_generator import pdf_generator
+from backend.services.pdf_generator import pdf_generator
 
 class DilekcePDFRequest(BaseModel):
     mahkeme: str

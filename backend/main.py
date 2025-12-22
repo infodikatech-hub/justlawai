@@ -94,7 +94,7 @@ class SozlesmeAnaliz(BaseModel):
 async def root():
     return {
         "message": "JustLaw API'ye Hoş Geldiniz",
-        "version": "1.0.0",
+        "version": "1.0.1",
         "status": "active",
         "gemini_configured": client is not None
     }

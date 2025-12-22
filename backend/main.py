@@ -661,7 +661,7 @@ YANIT FORMATI (SADECE JSON):
                 
                 import json
                 import re
-                json_match = re.search(r'\{[\s\S]*\}', ai_response_text)
+                json_match = re.search(r'\{[\s\S]*\}', ai_response)
                 
                 if json_match:
                     ai_data = json.loads(json_match.group())

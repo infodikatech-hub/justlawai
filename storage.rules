@@ -1,0 +1,26 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Kullanıcı dosyaları
+    match /users/{userId}/{allPaths=**} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId
+        && request.resource.size < 10 * 1024 * 1024; // Max 10MB
+    }
+    
+    // Dilekçe PDF'leri
+    match /dilekces/{dilekceId}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+        && request.resource.contentType.matches('application/pdf')
+        && request.resource.size < 5 * 1024 * 1024; // Max 5MB
+    }
+    
+    // Sözleşme dosyaları (analiz için)
+    match /sozlesmeler/{userId}/{fileName} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId
+        && request.resource.size < 20 * 1024 * 1024; // Max 20MB
+    }
+  }
+}

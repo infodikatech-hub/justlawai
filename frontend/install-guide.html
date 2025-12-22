@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#F59E0B">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="JustLaw">
+
+    <title>JustLaw'u Ana Ekrana Ekle - Kurulum Rehberi</title>
+    <meta name="description" content="JustLaw uygulamasını telefonunuzun ana ekranına ekleyerek hızlıca erişin.">
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Favicon & Icons -->
+    <link rel="icon" type="image/svg+xml" href="icons/icon-192x192.png">
+    <link rel="apple-touch-icon" href="icons/icon-152x152.png">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #F59E0B;
+            --primary-dark: #D97706;
+            --bg-dark: #0f0f0f;
+            --bg-surface: #1a1a1a;
+            --bg-card: #252525;
+            --text-primary: #ffffff;
+            --text-secondary: #b4b4b4;
+            --border: rgba(255, 255, 255, 0.1);
+            --radius: 12px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .logo img {
+            width: 60px;
+            height: 60px;
+        }
+
+        .logo-text {
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 12px;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 16px;
+        }
+
+        .platform-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 32px;
+            background: var(--bg-surface);
+            padding: 6px;
+            border-radius: var(--radius);
+            justify-content: center;
+        }
+
+        .platform-tab {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .platform-tab:hover {
+            color: var(--text-primary);
+        }
+
+        .platform-tab.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .platform-content {
+            display: none;
+        }
+
+        .platform-content.active {
+            display: block;
+        }
+
+        .steps {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .step {
+            display: flex;
+            gap: 20px;
+            background: var(--bg-card);
+            padding: 24px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .step-content h3 {
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .step-content p {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+
+        .step-icon {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: var(--bg-surface);
+            border-radius: 8px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .step-icon svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .benefits {
+            margin-top: 48px;
+            text-align: center;
+        }
+
+        .benefits h2 {
+            font-size: 24px;
+            margin-bottom: 24px;
+        }
+
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .benefit-card {
+            background: var(--bg-card);
+            padding: 24px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .benefit-icon {
+            font-size: 32px;
+            margin-bottom: 12px;
+        }
+
+        .benefit-card h4 {
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        .benefit-card p {
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        .cta {
+            text-align: center;
+            margin-top: 48px;
+        }
+
+        .cta-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 16px 32px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border: none;
+            border-radius: var(--radius);
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .cta-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(245, 158, 11, 0.3);
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            margin-bottom: 24px;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: var(--primary);
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 24px 16px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .platform-tabs {
+                flex-direction: column;
+            }
+
+            .step {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .step-number {
+                margin: 0 auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <a href="index.html" class="back-link">
+            ← Uygulamaya Dön
+        </a>
+
+        <div class="header">
+            <div class="logo">
+                <img src="icons/icon-192x192.png" alt="JustLaw Logo">
+                <span class="logo-text">JustLaw</span>
+            </div>
+            <h1>📲 Ana Ekrana Ekle</h1>
+            <p>JustLaw'u telefonunuza ekleyerek native uygulama gibi kullanın</p>
+        </div>
+
+        <div class="platform-tabs">
+            <button class="platform-tab active" onclick="showPlatform('ios')">
+                🍎 iPhone / iPad
+            </button>
+            <button class="platform-tab" onclick="showPlatform('android')">
+                🤖 Android
+            </button>
+            <button class="platform-tab" onclick="showPlatform('desktop')">
+                💻 Masaüstü
+            </button>
+        </div>
+
+        <!-- iOS Instructions -->
+        <div id="ios-content" class="platform-content active">
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3>Safari'yi Açın</h3>
+                        <p>JustLaw'u Safari tarayıcısında açın. Diğer tarayıcılar (Chrome, Firefox) bu özelliği
+                            desteklemez.</p>
+                        <div class="step-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+                            </svg>
+                            Safari
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3>Paylaş Butonuna Tıklayın</h3>
+                        <p>Ekranın altındaki paylaş butonuna (kare içinde yukarı ok) tıklayın.</p>
+                        <div class="step-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+                                <polyline points="16 6 12 2 8 6"></polyline>
+                                <line x1="12" y1="2" x2="12" y2="15"></line>
+                            </svg>
+                            Paylaş
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3>"Ana Ekrana Ekle" Seçin</h3>
+                        <p>Açılan menüde aşağı kaydırın ve "Ana Ekrana Ekle" seçeneğine tıklayın.</p>
+                        <div class="step-icon">
+                            ➕ Ana Ekrana Ekle
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h3>Ekle'ye Tıklayın</h3>
+                        <p>Sağ üst köşedeki "Ekle" butonuna tıklayın. JustLaw artık ana ekranınızda!</p>
+                        <div class="step-icon">
+                            ✅ Tamamlandı
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Android Instructions -->
+        <div id="android-content" class="platform-content">
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3>Chrome'u Açın</h3>
+                        <p>JustLaw'u Google Chrome tarayıcısında açın.</p>
+                        <div class="step-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <circle cx="12" cy="12" r="4"></circle>
+                            </svg>
+                            Chrome
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3>Menüyü Açın</h3>
+                        <p>Sağ üst köşedeki üç nokta menüsüne tıklayın.</p>
+                        <div class="step-icon">
+                            ⋮ Menü
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3>"Ana ekrana ekle" Seçin</h3>
+                        <p>Menüden "Ana ekrana ekle" veya "Uygulamayı yükle" seçeneğine tıklayın.</p>
+                        <div class="step-icon">
+                            📲 Ana ekrana ekle
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h3>Yükle'ye Tıklayın</h3>
+                        <p>Açılan pencerede "Yükle" veya "Ekle" butonuna tıklayın. Tamamlandı!</p>
+                        <div class="step-icon">
+                            ✅ Tamamlandı
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Desktop Instructions -->
+        <div id="desktop-content" class="platform-content">
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3>Chrome veya Edge Kullanın</h3>
+                        <p>JustLaw'u Google Chrome veya Microsoft Edge tarayıcısında açın.</p>
+                        <div class="step-icon">
+                            🌐 Tarayıcı
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3>Yükle Simgesine Tıklayın</h3>
+                        <p>Adres çubuğunun sağ tarafındaki yükle simgesine (➕ veya 📥) tıklayın.</p>
+                        <div class="step-icon">
+                            📥 Adres çubuğunda
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3>"Yükle" Butonuna Tıklayın</h3>
+                        <p>Açılan pencerede "Yükle" butonuna tıklayın. JustLaw masaüstünüze eklenecek!</p>
+                        <div class="step-icon">
+                            ✅ Tamamlandı
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="benefits">
+            <h2>🎁 Uygulama Olarak Kullanmanın Avantajları</h2>
+            <div class="benefits-grid">
+                <div class="benefit-card">
+                    <div class="benefit-icon">⚡</div>
+                    <h4>Hızlı Erişim</h4>
+                    <p>Tek tıkla uygulamayı açın</p>
+                </div>
+                <div class="benefit-card">
+                    <div class="benefit-icon">📱</div>
+                    <h4>Tam Ekran</h4>
+                    <p>Tarayıcı çubuğu olmadan kullanın</p>
+                </div>
+                <div class="benefit-card">
+                    <div class="benefit-icon">📴</div>
+                    <h4>Çevrimdışı Destek</h4>
+                    <p>Bazı özellikler çevrimdışı çalışır</p>
+                </div>
+                <div class="benefit-card">
+                    <div class="benefit-icon">🔔</div>
+                    <h4>Bildirimler</h4>
+                    <p>Yakında: Önemli güncellemeler</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="cta">
+            <a href="index.html" class="cta-btn">
+                ⚖️ JustLaw'u Aç
+            </a>
+        </div>
+    </div>
+
+    <script>
+        function showPlatform(platform) {
+            // Hide all content
+            document.querySelectorAll('.platform-content').forEach(el => {
+                el.classList.remove('active');
+            });
+            // Remove active from all tabs
+            document.querySelectorAll('.platform-tab').forEach(el => {
+                el.classList.remove('active');
+            });
+
+            // Show selected platform
+            document.getElementById(platform + '-content').classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Auto-detect platform
+        document.addEventListener('DOMContentLoaded', () => {
+            const userAgent = navigator.userAgent.toLowerCase();
+
+            if (/iphone|ipad|ipod/.test(userAgent)) {
+                showPlatformByName('ios');
+            } else if (/android/.test(userAgent)) {
+                showPlatformByName('android');
+            }
+        });
+
+        function showPlatformByName(platform) {
+            document.querySelectorAll('.platform-content').forEach(el => {
+                el.classList.remove('active');
+            });
+            document.querySelectorAll('.platform-tab').forEach(el => {
+                el.classList.remove('active');
+                if (el.textContent.toLowerCase().includes(
+                    platform === 'ios' ? 'iphone' : platform
+                )) {
+                    el.classList.add('active');
+                }
+            });
+            document.getElementById(platform + '-content').classList.add('active');
+        }
+    </script>
+</body>
+
+</html>

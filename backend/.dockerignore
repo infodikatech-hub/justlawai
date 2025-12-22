@@ -1,0 +1,14 @@
+# .dockerignore for Cloud Run
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.env.local
+.git/
+.gitignore
+venv/
+*.md
+.pytest_cache/
+.coverage
+htmlcov/

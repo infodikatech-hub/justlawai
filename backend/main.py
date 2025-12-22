@@ -607,7 +607,7 @@ async def create_dilekce_pdf(request: DilekcePDFRequest):
         }
 
         # AI ile zenginleştirme (Varsa)
-        if model:
+        if client:
             try:
                 # Tek bir prompt ile tüm alanları zenginleştir - GERÇEK DİLEKÇE ÖRNEKLERİ İLE
                 enhance_prompt = f"""Sen deneyimli bir Türk Hukuku avukatısın. Aşağıdaki taslağı, Türk Mahkemeleri'nde kabul gören resmi dilekçe formatına çevir.

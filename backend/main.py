@@ -96,7 +96,7 @@ async def root():
         "message": "JustLaw API'ye Hoş Geldiniz",
         "version": "1.0.0",
         "status": "active",
-        "gemini_configured": model is not None
+        "gemini_configured": client is not None
     }
 
 @app.get("/health")

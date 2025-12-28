@@ -780,9 +780,9 @@ async def create_payment(request: dict):
     # Calculate Order ID
     order_id = f"ORDER-{uuid.uuid4().hex[:8].upper()}"
     
-    # Shopier API Configuration
-    api_key = os.getenv("SHOPIER_API_KEY", "").strip()
-    api_secret = os.getenv("SHOPIER_API_SECRET", "").strip()
+    # Shopier API Configuration (Hardcoded as requested)
+    api_key = "b88f043894c4bb8d023565fa24fc5829"
+    api_secret = "93f8a73b9a0cbf1e7b0a001e1702a992"
     
     # Calculate Amount (Must be formatted to 2 decimals for the signature)
     amount = prices.get(plan_type, 999)
@@ -816,6 +816,9 @@ async def create_payment(request: dict):
     data_to_sign = (f"{random_nr}{order_id}{formatted_amount}{currency}{product_type}"
                     f"{buyer_name}{buyer_surname}{buyer_email}{user_id}{buyer_phone}"
                     f"{billing_address}{city}{country}{zip_code}")
+    
+    # Debug: Log the signature components (without the secret)
+    print(f"DEBUG: Shopier Signature String: {data_to_sign}")
     
     import hmac
     import hashlib
@@ -851,7 +854,7 @@ async def create_payment(request: dict):
             <input type="hidden" name="city" value="{city}">
             <input type="hidden" name="country" value="{country}">
             <input type="hidden" name="zip_code" value="{zip_code}">
-            <input type="hidden" name="price" value="{formatted_amount}">
+            <input type="hidden" name="total_amount" value="{formatted_amount}">
             <input type="hidden" name="currency" value="{currency}">
             <input type="hidden" name="random_nr" value="{random_nr}">
             <input type="hidden" name="signature" value="{signature}">
@@ -883,8 +886,8 @@ async def payment_callback(request: Request):
         incoming_signature = data.get("signature")
         random_nr = data.get("random_nr")
         
-        # Verify Signature
-        api_secret = os.getenv("SHOPIER_API_SECRET", "").strip()
+        # Verify Signature (Hardcoded secret as requested)
+        api_secret = "93f8a73b9a0cbf1e7b0a001e1702a992"
         data_to_verify = f"{random_nr}{order_id}"
         expected_signature = base64.b64encode(hmac.new(api_secret.encode('utf-8'), data_to_verify.encode('utf-8'), hashlib.sha256).digest()).decode('utf-8')
         

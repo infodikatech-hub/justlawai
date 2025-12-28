@@ -9,7 +9,7 @@ import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase
 // Firebase configuration
 const firebaseConfig = {
     apiKey: "AIzaSyDWQpuRGsR2OXAGxC20hgwCAiueijXTPr0",
-    authDomain: "justlawai.firebaseapp.com",
+    authDomain: "justlaw.com.tr",
     projectId: "justlawai",
     storageBucket: "justlawai.firebasestorage.app",
     messagingSenderId: "792593302800",

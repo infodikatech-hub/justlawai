@@ -16,10 +16,6 @@
             {
                 "source": "/api/**",
                 "function": "api"
-            },
-            {
-                "source": "/",
-                "destination": "/landing.html"
             }
         ],
         "headers": [

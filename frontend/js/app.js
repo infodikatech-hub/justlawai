@@ -4,7 +4,10 @@
  */
 
 // Configuration
-const API_BASE_URL = 'http://localhost:8000';
+// Configuration
+const API_BASE_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:')
+    ? 'http://localhost:8000'
+    : (window.CONFIG ? window.CONFIG.API_BASE_URL : 'https://justlaw-api.onrender.com');
 let conversationId = null;
 let isLoading = false;
 let messages = [];
@@ -34,12 +37,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     registerServiceWorker();
     setupInstallPrompt();
     setupOfflineDetection();
+    initDashboard();
 
     // Load Firebase auth
     await initAuth();
 
     console.log('JustLaw initialized successfully');
 });
+
+// ============== DASHBOARD FUNCTIONS ==============
+
+function initDashboard() {
+    // Set Date
+    const dateElement = document.getElementById('current-date');
+    if (dateElement) {
+        const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+        dateElement.textContent = new Date().toLocaleDateString('tr-TR', options);
+    }
+}
 
 // ============== PWA FUNCTIONS ==============
 
@@ -111,10 +126,18 @@ function hideInstallButton() {
     }
 }
 
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
 async function installPWA() {
+    if (isIOS) {
+        // Show iOS Guide Modal
+        const modal = document.getElementById('install-modal');
+        if (modal) modal.classList.add('active');
+        return;
+    }
+
     if (!deferredPrompt) {
-        // If no prompt, show manual install guide
-        window.location.href = 'install-guide.html';
+        alert('Uygulama zaten yüklü veya tarayıcınız desteklemiyor. Menüden "Ana Ekrana Ekle"yi deneyin.');
         return;
     }
 
@@ -128,6 +151,12 @@ async function installPWA() {
     deferredPrompt = null;
     hideInstallButton();
 }
+
+function closeInstallModal() {
+    const modal = document.getElementById('install-modal');
+    if (modal) modal.classList.remove('active');
+}
+window.closeInstallModal = closeInstallModal;
 
 function setupOfflineDetection() {
     // Initial check
@@ -181,10 +210,24 @@ async function initAuth() {
         // Listen for auth state changes
         authModule.onAuthChange(async (user) => {
             if (user) {
+                // E-posta doğrulama kontrolü (ZORUNLU)
+                if (!user.emailVerified) {
+                    console.warn('[App] Email not verified. Logging out...');
+                    await authModule.logoutUser();
+                    alert('Lütfen e-posta adresinize gelen doğrulama bağlantısına tıklayın ve tekrar giriş yapın.');
+                    window.location.href = 'index.html';
+                    return;
+                }
+
                 currentUser = user;
                 userData = await authModule.getUserData(user.uid);
                 console.log('[App] User logged in:', user.email);
                 updateUserUI(true);
+
+                // Trial kontrolü
+                if (typeof window.checkTrialStatus === 'function') {
+                    window.checkTrialStatus(user);
+                }
             } else {
                 currentUser = null;
                 userData = null;
@@ -252,6 +295,12 @@ function updateUserUI(isLoggedIn) {
 
         // Insert before other footer items
         sidebarFooter.insertBefore(userSection, sidebarFooter.firstChild);
+
+        // Update Dashboard Username
+        const dashboardUsername = document.getElementById('dashboard-username');
+        if (dashboardUsername) {
+            dashboardUsername.textContent = name.split(' ')[0]; // First name only
+        }
     }
 }
 
@@ -261,7 +310,7 @@ async function handleLogout() {
     if (confirm('Çıkış yapmak istediğinize emin misiniz?')) {
         const result = await authModule.logoutUser();
         if (result.success) {
-            window.location.href = 'landing.html';
+            window.location.href = 'index.html';
         }
     }
 }
@@ -311,6 +360,8 @@ async function sendMessage() {
     const loadingDiv = addLoadingMessage();
 
     try {
+        const userId = currentUser ? currentUser.uid : 'anonymous';
+
         const response = await fetch(`${API_BASE_URL}/api/chat`, {
             method: 'POST',
             headers: {
@@ -319,7 +370,7 @@ async function sendMessage() {
             body: JSON.stringify({
                 message: message,
                 conversation_id: conversationId,
-                user_id: 'anonymous' // TODO: Firebase Auth
+                user_id: userId
             })
         });
 
@@ -335,7 +386,7 @@ async function sendMessage() {
         }
 
         // Add assistant message
-        addMessage(data.response, 'assistant', data.sources || []);
+        addMessage(data.response, 'assistant');
         conversationId = data.conversation_id;
 
         // Save to history
@@ -344,44 +395,64 @@ async function sendMessage() {
     } catch (error) {
         console.error('Error:', error);
         loadingDiv.remove();
-        addMessage('Backend sunucusuna bağlanılamadı. Lütfen backend sunucusunun çalıştığından emin olun (port 8000).', 'assistant');
+        addMessage('⚠️ Sunucuya bağlanılamadı. (Sunucu uyku modunda olabilir, lütfen 30 saniye bekleyip tekrar deneyin)', 'assistant');
     } finally {
         isLoading = false;
         sendBtn.disabled = false;
     }
 }
 
-function addMessage(content, role, sources = []) {
+function addMessage(text, sender, isTyping = false) {
+    const chatMessages = document.getElementById('chat-messages');
+
     const messageDiv = document.createElement('div');
-    messageDiv.className = `message ${role}`;
+    messageDiv.classList.add('message', sender);
+    if (isTyping) messageDiv.classList.add('typing');
 
-    const avatar = role === 'user' ? '👤' : '⚖️';
+    const avatarDiv = document.createElement('div');
+    avatarDiv.classList.add('message-avatar');
 
-    let sourcesHtml = '';
-    if (sources && sources.length > 0) {
-        sourcesHtml = `
-            <div class="message-sources">
-                <strong>Kaynaklar:</strong><br>
-                ${sources.map(s => `• ${s.metadata?.baslik || s.metadata?.source || 'Kaynak'}`).join('<br>')}
-            </div>
-        `;
+    // SVG Avatars
+    if (sender === 'ai') {
+        avatarDiv.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7H11V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z"></path><path d="M9 13v2"></path><path d="M15 13v2"></path></svg>'; // Robot Icon
+    } else {
+        avatarDiv.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>'; // User Icon
     }
 
-    messageDiv.innerHTML = `
-        <div class="message-avatar">${avatar}</div>
-        <div class="message-content">
-            ${formatMessage(content)}
-            ${sourcesHtml}
-        </div>
-    `;
+    const contentDiv = document.createElement('div');
+    contentDiv.classList.add('message-content');
 
-    // Store message
-    messages.push({ content, role, sources });
+    if (isTyping) {
+        contentDiv.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
+    } else {
+        // Parse basic markdown
+        contentDiv.innerHTML = marked.parse(text);
+    }
+
+    messageDiv.appendChild(avatarDiv);
+    messageDiv.appendChild(contentDiv);
 
     chatMessages.appendChild(messageDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    return messageDiv;
 }
 
+function showWelcomeMessage() {
+    const welcomeHTML = `
+        <div class="welcome-message">
+            <h2>Merhaba, ben JustLaw 👋</h2>
+            <p>Size nasıl yardımcı olabilirim? Aşağıdaki konularda soru sorabilirsiniz:</p>
+            <div class="suggestion-chips">
+                <button onclick="usePrompt('Kıdem tazminatı nasıl hesaplanır?')">Kıdem Tazminatı</button>
+                <button onclick="usePrompt('Kiracı tahliye süreci nasıldır?')">Kira Hukuku</button>
+                <button onclick="usePrompt('Boşanma davası ne kadar sürer?')">Aile Hukuku</button>
+                <button onclick="usePrompt('Tüketici hakem heyeti başvurusu nasıl yapılır?')">Tüketici Hakları</button>
+            </div>
+        </div>
+    `;
+    addMessage(welcomeHTML, 'ai');
+}
 function addLoadingMessage() {
     const loadingDiv = document.createElement('div');
     loadingDiv.className = 'message assistant';
@@ -537,79 +608,359 @@ function confirmDeleteAccount() {
     }
 }
 
+// ============== SEARCH FILTER ==============
+
+function filterDilekce() {
+    const searchInput = document.getElementById('dilekce-search');
+    const filter = searchInput.value.toLowerCase();
+    const categories = document.querySelectorAll('.dilekce-category');
+    let hasVisibleItems = false;
+
+    categories.forEach(category => {
+        const items = category.querySelectorAll('.type-card');
+        let hasVisibleItemInCategory = false;
+
+        items.forEach(item => {
+            const title = item.querySelector('h3').textContent.toLowerCase();
+            const desc = item.querySelector('p').textContent.toLowerCase();
+
+            // Broad search: match title or description
+            if (title.includes(filter) || desc.includes(filter)) {
+                item.style.display = ''; // Revert to CSS default (block/flex/grid)
+                hasVisibleItemInCategory = true;
+                hasVisibleItems = true;
+            } else {
+                item.style.display = 'none';
+            }
+        });
+
+        // Hide category if no items match
+        if (hasVisibleItemInCategory) {
+            category.style.display = 'block';
+        } else {
+            category.style.display = 'none';
+        }
+    });
+
+    // Optional: Show "No results" message if needed
+    // const noResultsMsg = document.getElementById('search-no-results');
+    // if (!hasVisibleItems && filter !== '') {
+    //     noResultsMsg.style.display = 'block';
+    // }
+}
+
 // ============== DILEKCE ==============
 
 let selectedDilekceType = null;
 
 const dilekceTypeNames = {
-    // Hukuk Davaları
-    'alacak-davasi': 'Alacak Davası Dilekçesi',
-    'bosanma': 'Boşanma Davası Dilekçesi',
+    // Aile Hukuku
+    'bosanma': 'Çekişmeli Boşanma Davası',
+    'anlasmali-bosanma': 'Anlaşmalı Boşanma Davası',
+    'zina-bosanma': 'Zina Nedeniyle Boşanma',
+    'terk-bosanma': 'Terk Nedeniyle Boşanma',
     'velayet': 'Velayet Davası Dilekçesi',
+    'velayet-degistirme': 'Velayetin Değiştirilmesi Talebi',
+    'kisisel-iliski': 'Çocukla Kişisel İlişki Kurulması',
     'nafaka': 'Nafaka Davası Dilekçesi',
-    'miras': 'Miras Davası Dilekçesi',
+    'nafaka-artirim': 'Nafaka Artırım Davası',
+    'nafaka-azaltim': 'Nafaka Azaltım Davası',
+    'babalik': 'Babalık Davası Dilekçesi',
+    'soybaginin-reddi': 'Soybağının Reddi Dilekçesi',
+    'iddet-muddeti': 'İddet Müddetinin Kaldırılması',
+    'evlat-edinme': 'Evlat Edinme Başvurusu',
+    'aile-konutu': 'Aile Konutu Şerhi Konulması',
+    'soyadi-degisikligi': 'Soyadı Değişikliği Davası',
+    'yurtdisi-cikis': 'Çocuğun Yurtdışına Çıkış İzni',
+    'mal-rejimi': 'Mal Rejimi Tasfiye Dilekçesi',
+    'ziynet': 'Ziynet Eşyası İadesi Davası',
+
     // İş Hukuku
     'kidem-tazminati': 'Kıdem Tazminatı Dilekçesi',
+    'ihbar-tazminati': 'İhbar Tazminatı Dilekçesi',
     'ise-iade': 'İşe İade Davası Dilekçesi',
     'fazla-mesai': 'Fazla Mesai Alacağı Dilekçesi',
-    'is-kazasi': 'İş Kazası Tazminat Dilekçesi',
-    // İcra ve İflas
-    'icra-itiraz': 'İcra İtiraz Dilekçesi',
-    'itirazin-iptali': 'İtirazın İptali Dilekçesi',
-    'menfi-tespit': 'Menfi Tespit Dilekçesi',
-    'istirdat': 'İstirdat Davası Dilekçesi',
+    'ucret-alacagi': 'Ödenmeyen Ücret Alacağı',
+    'yillik-izin': 'Yıllık İzin Ücreti Alacağı',
+    'is-kazasi': 'İş Kazası Maddi/Manevi Tazminat',
+    'mobbing': 'Mobbing Nedeniyle Haklı Fesih',
+    'sigorta-tespit': 'Hizmet Tespit Davası',
+    'kotu-niyet': 'Kötü Niyet Tazminatı Davası',
+
     // Kira ve Gayrimenkul
-    'tahliye': 'Tahliye Davası Dilekçesi',
-    'kira-tespit': 'Kira Tespit Dilekçesi',
-    'kira-alacagi': 'Kira Alacağı Dilekçesi',
-    'elatmanin-onlenmesi': 'El Atmanın Önlenmesi Dilekçesi',
-    // Tüketici ve Ticaret
-    'tuketici': 'Tüketici Davası Dilekçesi',
-    'fatura-itiraz': 'Fatura İtiraz Dilekçesi',
-    'ticari-alacak': 'Ticari Alacak Dilekçesi',
-    // İdari Davalar
-    'iptal-davasi': 'İptal Davası Dilekçesi',
-    'tam-yargi': 'Tam Yargı Davası Dilekçesi',
-    'vergi-itiraz': 'Vergi İtiraz Dilekçesi'
+    'tahliye': 'Tahliye Davası (Temerrüt)',
+    'ihtiyac-tahliye': 'İhtiyaç Nedeniyle Tahliye',
+    'tahliye-taahhut': 'Tahliye Taahhüdüne Dayalı Tahliye',
+    'kira-tespit': 'Kira Tespit Davası',
+    'kira-alacagi': 'Kira Alacağı İcra Takibi/Dava',
+    'kira-uyarlama': 'Kira Uyarlama Davası',
+    'elatmanin-onlenmesi': 'Müdahalenin Men\'i (El Atmanın Önlenmesi)',
+    'ecrimisil': 'Ecrimisil (Haksız İşgal) Tazminatı',
+    'izale-i-suyu': 'İzale-i Şuyu (Ortaklığın Giderilmesi)',
+    'tapu-iptal': 'Tapu İptal ve Tescil Davası',
+    'sufa': 'Önalım (Şufa) Hakkı Davası',
+    'gecit-hakki': 'Geçit Hakkı Kurulması Talebi',
+    'kat-karsiligi': 'Kat Karşılığı İnşaat Sözl. Feshi',
+    'yonetim-plani': 'Yönetim Planı İptali',
+    'komsuluk-hukuku': 'Komşuluk Hukukuna Aykırılık',
+
+    // Ceza Hukuku
+    'suc-duyurusu': 'Suç Duyurusu (Genel)',
+    'dolandiricilik': 'Dolandırıcılık Suç Duyurusu',
+    'hakaret-tehdit': 'Hakaret ve Tehdit Suç Duyurusu',
+    'savunma': 'Savunma Dilekçesi (Mahkeme)',
+    'ifade-verme': 'Yazılı İfade Sunma',
+    'tutukluluk-itiraz': 'Tutukluluğa İtiraz Dilekçesi',
+    'adli-kontrol-itiraz': 'Adli Kontrole İtiraz',
+    'hagb-itiraz': 'HAGB Kararına İtiraz',
+    'kyok-itiraz': 'Kovuşturmaya Yer Olmadığına İtiraz',
+    'istinaf-ceza': 'Ceza İstinaf Başvuru Dilekçesi',
+    'koruma-karari': '6284 Sayılı Kanun Koruma Talebi',
+    'uzlasma': 'Uzlaşma Talep/Kabul Beyanı',
+    'adli-sicil': 'Adli Sicil Kaydı Silme (Memnu Hak)',
+    'infaz-erteleme': 'Cezanın İnfazının Ertelenmesi',
+
+    // İcra ve İflas
+    'icra-takibi': 'İlamsız İcra Takibi Talebi',
+    'icra-itiraz': 'Ödeme Emrine İtiraz',
+    'imza-itiraz': 'İmzaya İtiraz Dilekçesi',
+    'itirazin-iptali': 'İtirazın İptali Davası',
+    'itirazin-kaldirilmasi': 'İtirazın Kaldırılması Talebi',
+    'menfi-tespit': 'Menfi Tespit (Borçsuzluk) Davası',
+    'istirdat': 'İstirdat (Geri Alım) Davası',
+    'ihalenin-feshi': 'İhalenin Feshi Davası',
+    'kiymet-takdiri': 'Kıymet Takdirine İtiraz',
+    'istihkak': 'İstihkak Davası Dilekçesi',
+    'ihtiyati-haciz': 'İhtiyati Haciz Talebi',
+    'maas-haczi-itiraz': 'Maaş Haczine Müzekkere İtirazı',
+    'haczedilmezlik': 'Meskeniyet (Haczedilmezlik) Şikayeti',
+    'cek-iptali': 'Çek İptali Davası',
+
+    // Tüketici Hukuku
+    'tuketici-hakem': 'Tüketici Hakem Heyeti Başvurusu',
+    'tuketici-dava': 'Tüketici Mahkemesi Dava Dilekçesi',
+    'ayipli-mal': 'Ayıplı Mal Bedel İadesi',
+    'ayipli-hizmet': 'Ayıplı Hizmet Tazminatı',
+    'ayipli-arac': 'Ayıplı Araç (Sıfır/İkinci El) İadesi',
+    'devre-mulk': 'Devre Mülk İptali ve Bedel İadesi',
+    'banka-ucret': 'Banka Dosya Masrafı İadesi',
+    'kredi-karti': 'Kredi Kartı Aidatı İadesi',
+    'abonelik-iptal': 'Abonelik İptal Başvurusu',
+
+    // Bilişim ve İnternet
+    'erisim-engelleme': 'Erişim Engelleme (Sulh Ceza)',
+    'icerik-kaldirma': 'İçerik Kaldırma İhtarnamesi',
+    'unutulma-hakki': 'Unutulma Hakkı Başvurusu',
+    'kvkk-sikayet': 'KVKK Kuruluna Şikayet',
+    'sosyal-medya': 'Sosyal Medya Hesabı Çalınması',
+
+    // Şirketler ve Ticaret (New)
+    'sirket-kurulus': 'Şirket Kuruluş Sözleşmesi',
+    'genel-kurul-iptal': 'Genel Kurul Kararının İptali',
+    'sirket-fesih': 'Şirketin Haklı Nedenle Feshi',
+    'yonetici-sorumluluk': 'Yöneticilerin Sorumluluğu Davası',
+    'haksiz-rekabet': 'Haksız Rekabetin Önlenmesi',
+    'konkordato': 'Konkordato Talep Dilekçesi',
+    'iflas': 'İflas Yoluyla Takip/Dava',
+    'ticari-alacak': 'Ticari Alacak Davası',
+    'fatura-itiraz': 'Faturaya İtiraz İhtarnamesi',
+
+    // Sigorta Hukuku
+    'arac-deger-kaybi': 'Araç Değer Kaybı Başvurusu',
+    'hasar-tazminati': 'Trafik Hasar Tazminatı',
+    'bedeni-hasar': 'Bedeni Hasar (Yaralanma) Tazminatı',
+    'destekten-yoksun': 'Destekten Yoksun Kalma Tazminatı',
+    'imm-basvuru': 'İMM (İhtiyari Mali Mesuliyet) Başvurusu',
+    'sigorta-tahkim': 'Sigorta Tahkim Komisyonu Başvurusu',
+
+    // İdare Hukuku
+    'iptal-davasi': 'İdari İşlemin İptali Davası',
+    'tam-yargi': 'Tam Yargı (Tazminat) Davası',
+    'yurutme-durdurma': 'Yürütmenin Durdurulması Talebi',
+    'imar-iptal': 'İmar Planı İptali Davası',
+    'yikim-itiraz': 'Yıkım Kararına İtiraz',
+    'memur-disiplin': 'Memur Disiplin Cezası İptali',
+    'guvenlik-sorusturmasi': 'Güvenlik Soruşturması İptali',
+    'goreve-iade': 'Göreve İade Talebi',
+    'vergi-itiraz': 'Vergi/Ceza İhbarnamesine İtiraz',
+
+    // Yabancılar Hukuku
+    'deport-itiraz': 'Deport (Sınırdışı) Kararı İptali',
+    'ikamet-red': 'İkamet İzni Reddine İtiraz',
+    'calisma-izni': 'Çalışma İzni Reddine İtiraz',
+    'idari-gozetim': 'İdari Gözetim Kararına İtiraz',
+    'vatandaslik': 'Vatandaşlık Başvurusu Reddine İtiraz',
+
+    // Fikri Mülkiyet (New)
+    'marka-tecavuz': 'Marka Hakkına Tecavüz Davası',
+    'telif-ihlali': 'Fikir ve Sanat Eseri Telif İhlali',
+    'patent-hukumsuzluk': 'Patent Hükümsüzlüğü Davası',
+    'tecavuz-ref': 'Tecavüzün Ref\'i (Giderilmesi) Davası',
+    'marka-itiraz': 'TPE Marka Yayınına İtiraz',
+
+    // Sağlık Hukuku (New)
+    'malpraktis': 'Hekim Hatası (Malpraktis) Tazminatı',
+    'hasta-haklari': 'Hasta Hakları Başvurusu',
+    'ozel-hastane': 'Özel Hastane Fatura İtirazı'
 };
 
 const dilekceKonular = {
-    // Hukuk Davaları
-    'alacak-davasi': 'Alacak ve tazminat talebi',
-    'bosanma': 'Evlilik birliğinin sona erdirilmesi',
-    'velayet': 'Çocuk velayetinin belirlenmesi',
-    'nafaka': 'Nafaka artırım/azaltım talebi',
-    'miras': 'Miras taksimi ve tenkis davası',
-    // İş Hukuku
-    'kidem-tazminati': 'Kıdem ve ihbar tazminatı alacağı',
-    'ise-iade': 'Haksız feshin iptali ve işe iade',
-    'fazla-mesai': 'Fazla mesai ücreti alacağı',
-    'is-kazasi': 'İş kazası nedeniyle maddi ve manevi tazminat',
-    // İcra ve İflas
-    'icra-itiraz': 'Ödeme emrine itiraz',
-    'itirazin-iptali': 'Borçlu itirazının iptali ve takibin devamı',
-    'menfi-tespit': 'Borçlu olmadığının tespiti',
-    'istirdat': 'Fazla ödenen paranın iadesi',
-    // Kira ve Gayrimenkul
-    'tahliye': 'Kiralananın tahliyesi',
-    'kira-tespit': 'Kira bedelinin tespiti',
-    'kira-alacagi': 'Ödenmeyen kira bedelinin tahsili',
-    'elatmanin-onlenmesi': 'Müdahalenin men\'i ve eski hale iade',
-    // Tüketici ve Ticaret
-    'tuketici': 'Ayıplı mal/hizmet nedeniyle tazminat',
-    'fatura-itiraz': 'Haksız faturaya itiraz',
-    'ticari-alacak': 'Ticari alacağın tahsili',
-    // İdari Davalar
-    'iptal-davasi': 'İdari işlemin iptali',
-    'tam-yargi': 'İdarenin verdiği zararın tazmini',
-    'vergi-itiraz': 'Vergi cezasının iptali'
+    // Aile
+    'bosanma': 'Çekişmeli boşanma, maddi/manevi tazminat ve velayet talebi',
+    'anlasmali-bosanma': 'Protokol hükümleri çerçevesinde anlaşmalı boşanma talebi',
+    'zina-bosanma': 'Zina (aldatma) nedeniyle boşanma ve tazminat',
+    'terk-bosanma': 'Terk (eve dönmeme) nedeniyle boşanma',
+    'velayet': 'Velayetin anneye/babaya verilmesi talebi',
+    'velayet-degistirme': 'Değişen şartlar nedeniyle velayetin değiştirilmesi (nez\'i)',
+    'kisisel-iliski': 'Çocuk ile şahsi ilişki kurulması veya süresinin artırılması',
+    'nafaka': 'İştirak/Yoksulluk nafakasının bağlanması',
+    'nafaka-artirim': 'Ekonomik koşullar nedeniyle nafaka artırımı',
+    'nafaka-azaltim': 'Ödeme güçlüğü nedeniyle nafaka indirimi/kaldırılması',
+    'babalik': 'DNA testi ile babalığın tespiti ve tescili',
+    'soybaginin-reddi': 'Nesebin (soybağının) reddi talebi',
+    'iddet-muddeti': 'Kadının 300 günlük bekleme süresinin kaldırılması',
+    'evlat-edinme': 'Küçüğün evlat edinilmesi için izin talebi',
+    'aile-konutu': 'Tapuya aile konutu şerhi işlenmesi',
+    'soyadi-degisikligi': 'Haklı nedenlerle isim/soyisim değişikliği',
+    'yurtdisi-cikis': 'Velayeti kendisinde olan tarafın çocuğu yurtdışına çıkarma izni',
+    'mal-rejimi': 'Edinilmiş mallara katılma ve katkı payı alacağı',
+    'ziynet': 'Düğün takılarının (ziynet eşyası) iadesi veya bedeli',
+
+    // İş
+    'kidem-tazminati': 'Ödenmeyen kıdem tazminatı alacağı',
+    'ihbar-tazminati': 'İhbar süresine uyulmadığından tazminat talebi',
+    'ise-iade': 'Feshin geçersizliği, işe iade ve boşta geçen süre ücreti',
+    'fazla-mesai': 'Ödenmeyen fazla mesai ücretlerinin tahsili',
+    'ucret-alacagi': 'Ödenmeyen maaş/ücret alacaklarının tahsili',
+    'yillik-izin': 'Kullandırılmayan yıllık izin ücretlerinin tahsili',
+    'is-kazasi': 'İş kazası sonucu maluliyet/ölüm nedeniyle tazminat',
+    'mobbing': 'Sistematik psikolojik taciz nedeniyle haklı fesih',
+    'sigorta-tespit': 'Kuruma bildirilmeyen hizmet günlerinin tespiti',
+    'kotu-niyet': 'İşverenin kötü niyetli feshi nedeniyle tazminat',
+
+    // Gayrimenkul & Kira
+    'tahliye': 'Kira borcunun ödenmemesi nedeniyle tahliye',
+    'ihtiyac-tahliye': 'Konut/İşyeri gereksinimi nedeniyle tahliye',
+    'tahliye-taahhut': 'Yazılı tahliye taahhüdüne dayalı tahliye',
+    'kira-tespit': '5 yılı dolduran kiracının kira bedelinin piyasaya göre tespiti',
+    'kira-alacagi': 'Ödenmeyen kira bedellerinin tahsili',
+    'kira-uyarlama': 'Olağanüstü hallerde kira bedelinin uyarlanması',
+    'elatmanin-onlenmesi': 'Haksız işgalin (müdahalenin) önlenmesi',
+    'ecrimisil': 'Haksız kullanım nedeniyle işgal tazminatı',
+    'izale-i-suyu': 'Fiziksel taksim veya satış suretiyle ortaklığın giderilmesi',
+    'tapu-iptal': 'Yolsuz tescil nedeniyle tapu kaydının iptali ve tescili',
+    'sufa': 'Paylı mülkiyette önalım hakkının kullanılması',
+    'gecit-hakki': 'Zorunlu geçit hakkı kurulması',
+    'kat-karsiligi': 'İnşaatın tamamlanmaması nedeniyle sözleşme feshi',
+    'yonetim-plani': 'Kanuna aykırı yönetim planı maddesinin iptali',
+    'komsuluk-hukuku': 'Gürültü, koku vb. nedenlerle komşuluk hakkı ihlali',
+
+    // Ceza
+    'suc-duyurusu': 'Cumhuriyet Başsavcılığına şikayet dilekçesi',
+    'dolandiricilik': 'TCK 157/158 Dolandırıcılık suçu şikayeti',
+    'hakaret-tehdit': 'Hakaret, tehdit ve şantaj suçlaması',
+    'savunma': 'İddianameye veya esas hakkındaki mütalaaya karşı savunma',
+    'ifade-verme': 'Soruşturma aşamasında yazılı ifade',
+    'tutukluluk-itiraz': 'Tutuklama kararının kaldırılarak tahliye talebi',
+    'adli-kontrol-itiraz': 'İmza vb. adli kontrol tedbirinin kaldırılması',
+    'hagb-itiraz': 'Hükmün açıklanmasının geri bırakılması kararına itiraz',
+    'kyok-itiraz': 'Kovuşturmaya Yer Olmadığı (Takipsizlik) kararına itiraz',
+    'istinaf-ceza': 'Yerel mahkeme kararına karşı İstinaf başvurusu',
+    'koruma-karari': 'Şiddet tehdidi nedeniyle 6284 s. K. uyarınca önleyici tedbir',
+    'uzlasma': 'Uzlaşma teklifine beyan',
+    'adli-sicil': 'Yasal şartlar oluştuğundan adli sicil kaydının silinmesi',
+    'infaz-erteleme': 'Hastalık/Gebelik vb. nedenlerle infazın ertelenmesi',
+
+    // İcra
+    'icra-takibi': 'Fatura/Belgeye dayalı ilamsız takip talebi',
+    'icra-itiraz': 'Borca, faize ve yetkiye itiraz',
+    'imza-itiraz': 'Senetteki imzanın sahteliği iddiasıyla itiraz',
+    'itirazin-iptali': 'Borçlunun haksız itirazının iptali ve inkar tazminatı',
+    'itirazin-kaldirilmasi': 'İcra Hukuk Mahkemesinde itirazın kaldırılması',
+    'menfi-tespit': 'İcra tehdidi altındaki borcun olmadığının tespiti',
+    'istirdat': 'Cebri icra tehdidiyle ödenen paranın geri alınması',
+    'ihalenin-feshi': 'Usulsüzlük nedeniyle icra ihalesinin feshi',
+    'kiymet-takdiri': 'Hacizli malın değer tespitine itiraz',
+    'istihkak': 'Haczedilen malın 3. kişiye ait olduğu iddiası',
+    'ihtiyati-haciz': 'Alacağın güvence altına alınması için ihtiyati haciz',
+    'maas-haczi-itiraz': 'Haczedilmezlik veya oran hatası nedeniyle maaş haczine itiraz',
+    'haczedilmezlik': 'Tek konutun (meskenin) haczine itiraz',
+    'cek-iptali': 'Rızası dışında elden çıkan çekin iptali',
+
+    // Tüketici
+    'tuketici-hakem': 'Tüketici Hakem Heyetine ayıplı mal başvurusu',
+    'tuketici-dava': 'Tüketici Mahkemesinde dava açılması',
+    'ayipli-mal': 'Ayıplı ürünün değişimi veya iadesi',
+    'ayipli-hizmet': 'Hatalı hizmet nedeniyle bedel iadesi/tazminat',
+    'ayipli-arac': 'Gizli ayıplı aracın iadesi veya değer kaybı',
+    'devre-mulk': 'Cayma hakkı veya ifa imkansızlığı nedeniyle iptal',
+    'banka-ucret': 'Haksız alınan dosya masrafının iadesi',
+    'kredi-karti': 'Yıllık kart aidatının iadesi',
+    'abonelik-iptal': 'İnternet/GSM aboneliğinin iptali',
+
+    // Bilişim
+    'erisim-engelleme': '5651 s. K. uyarınca kişilik hakları ihlali',
+    'icerik-kaldirma': 'İnternet sitesi/yer sağlayıcıya ihtar',
+    'unutulma-hakki': 'Eski tarihli haberlerin arama motorundan silinmesi',
+    'kvkk-sikayet': 'Kişisel verilerin hukuka aykırı işlenmesi şikayeti',
+    'sosyal-medya': 'Hesap hırsızlığı nedeniyle şikayet ve erişim engeli',
+
+    // Şirketler
+    'sirket-kurulus': 'Anonim/Limited şirket ana sözleşmesi',
+    'genel-kurul-iptal': 'Kanuna/Sözleşmeye aykırı genel kurul karar iptali',
+    'sirket-fesih': 'Haklı nedenlerle şirketin feshi ve tasfiyesi',
+    'yonetici-sorumluluk': 'Yönetim kurulu üyelerinin hukuki sorumluluğu',
+    'haksiz-rekabet': 'TTK uyarınca haksız rekabetin tespiti ve önlenmesi',
+    'konkordato': 'Borçların yapılandırılması için konkordato mühleti talebi',
+    'iflas': 'Doğrudan veya takipli iflas talebi',
+    'ticari-alacak': 'Ticari satımdan kaynaklanan alacak davası',
+    'fatura-itiraz': '8 gün içinde faturaya itiraz',
+
+    // Sigorta
+    'arac-deger-kaybi': 'Eksper raporuna dayalı değer kaybı talebi',
+    'hasar-tazminati': 'Kasko/Trafik sigortasından hasar tahsili',
+    'bedeni-hasar': 'Sürekli/Geçici iş göremezlik tazminatı',
+    'destekten-yoksun': 'Vefat halinde yakınların tazminat talebi',
+    'imm-basvuru': 'Zorunlu sigorta limitini aşan hasarlar',
+    'sigorta-tahkim': 'Sigorta Tahkim Komisyonuna başvuru',
+
+    // İdare
+    'iptal-davasi': 'Menfaati ihlal eden idari işlemin iptali',
+    'tam-yargi': 'İdari eylem/işlemden doğan zararın tazmini',
+    'yurutme-durdurma': 'Telafisi güç zararlar nedeniyle YD talebi',
+    'imar-iptal': 'Nazım/Uygulama imar planının iptali',
+    'yikim-itiraz': 'Belediye yıkım kararına ve cezasına itiraz',
+    'memur-disiplin': 'Uyarma/Kınama/İhraç cezalarının iptali',
+    'guvenlik-sorusturmasi': 'Olumsuz güvenlik soruşturması kararının iptali',
+    'goreve-iade': 'Kamu görevine iade talebi',
+    'vergi-itiraz': 'Vergi ziyaı cezası ve usulsüzlük cezasına itiraz',
+
+    // Yabancılar
+    'deport-itiraz': 'Sınırdışı kararına karşı İdare Mahkemesinde dava',
+    'ikamet-red': 'İkamet izni başvurusunun reddine itiraz',
+    'calisma-izni': 'Çalışma izni başvurusunun reddine itiraz',
+    'idari-gozetim': 'Sulh Ceza Hakimliğine idari gözetim itirazı',
+    'vatandaslik': 'Vatandaşlık başvurusunun reddine itiraz',
+
+    // Fikri Mülkiyet
+    'marka-tecavuz': 'Marka hakkına tecavüzün durdurulması',
+    'telif-ihlali': 'İzinsiz eser kullanımı nedeniyle tazminat',
+    'patent-hukumsuzluk': 'Yenilik/tekniğin bilinen durumu nedeniyle hükümsüzlük',
+    'tecavuz-ref': 'Tecavüzün ref\'i (giderilmesi) ve men\'i (önlenmesi)',
+    'marka-itiraz': 'Türk Patent Kurumu nezdinde marka yayınına itiraz',
+
+    // Sağlık
+    'malpraktis': 'Hekim hatası nedeniyle maddi/manevi tazminat',
+    'hasta-haklari': 'Hasta hakları birimine/Bakanlığa şikayet',
+    'ozel-hastane': 'Fahiş veya haksız hastane faturasına itiraz'
 };
 
 function selectDilekce(type) {
     selectedDilekceType = type;
 
-    // Hide type selection, show form
+    // Hide type selection and search, show form
     document.getElementById('dilekce-types').style.display = 'none';
+    document.querySelector('.dilekce-search-container').style.display = 'none';
     document.getElementById('dilekce-form').style.display = 'block';
 
     // Update form title
@@ -624,92 +975,154 @@ function selectDilekce(type) {
 
 function showDilekceTypes() {
     document.getElementById('dilekce-types').style.display = 'grid';
+    document.querySelector('.dilekce-search-container').style.display = 'block';
     document.getElementById('dilekce-form').style.display = 'none';
     selectedDilekceType = null;
 }
 
 async function generateDilekcePDF() {
-    const btn = document.getElementById('generate-pdf-btn');
+    const btn = document.getElementById('wizard-submit');
     const originalText = btn.innerHTML;
 
-    // Validate form
-    const mahkeme = document.getElementById('dilekce-mahkeme').value.trim();
-    const davaciAdi = document.getElementById('dilekce-davaci-adi').value.trim();
-    const davaciTc = document.getElementById('dilekce-davaci-tc').value.trim();
-    const davaciAdres = document.getElementById('dilekce-davaci-adres').value.trim();
-    const davaliAdi = document.getElementById('dilekce-davali-adi').value.trim();
-    const davaliAdres = document.getElementById('dilekce-davali-adres').value.trim();
-    const konu = document.getElementById('dilekce-konu').value.trim();
-    const aciklamalar = document.getElementById('dilekce-aciklamalar').value.trim();
-    const talepler = document.getElementById('dilekce-talepler').value.trim();
+    // Helper to safely get values
+    const getVal = (id) => document.getElementById(id)?.value?.trim() || '';
+
+    const mahkeme = getVal('dilekce-mahkeme') || 'ASLİYE HUKUK MAHKEMESİ HAKİMLİĞİNE';
+    const davaciAdi = getVal('dilekce-davaci-adi');
+    const davaciTc = getVal('dilekce-davaci-tc');
+    const davaciAdres = getVal('dilekce-davaci-adres');
+    const davaliAdi = getVal('dilekce-davali-adi');
+    const davaliAdres = getVal('dilekce-davali-adres');
+    const konu = getVal('dilekce-konu');
+    const aciklamalar = getVal('dilekce-aciklamalar');
+    const talepler = getVal('dilekce-talepler');
 
     if (!davaciAdi || !aciklamalar) {
-        alert('Lütfen en az davacı adı ve açıklamaları doldurun.');
+        alert('Lütfen en az "Davacı Adı" ve "Açıklamalar" alanlarını doldurun.');
         return;
     }
 
-    // TC Kimlik No validation
-    if (davaciTc && (davaciTc.length !== 11 || !/^\d{11}$/.test(davaciTc))) {
-        alert('TC Kimlik Numarası tam olarak 11 haneli rakam olmalıdır.');
-        return;
-    }
-
-    btn.innerHTML = 'PDF Oluşturuluyor...';
+    btn.innerHTML = '✨ AI Hazırlıyor...';
     btn.disabled = true;
 
     try {
+        const payload = {
+            mahkeme: mahkeme,
+            davaci_adi: davaciAdi,
+            davaci_tc: davaciTc || '-',
+            davaci_adres: davaciAdres || '-',
+            davali_adi: davaliAdi || '-',
+            davali_adres: davaliAdres || '-',
+            konu: konu || (dilekceKonular[selectedDilekceType] || 'Dava Konusu'),
+            aciklamalar: aciklamalar,
+            talepler: talepler || 'Hukuki haklarımın korunmasını talep ederim.',
+            dilekce_turu: dilekceTypeNames[selectedDilekceType] || 'Dilekce'
+        };
+
         const response = await fetch(`${API_BASE_URL}/api/dilekce/pdf`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                mahkeme: mahkeme || 'ASLİYE HUKUK MAHKEMESİ HAKİMLİĞİNE',
-                davaci_adi: davaciAdi,
-                davaci_tc: davaciTc || '...',
-                davaci_adres: davaciAdres || '...',
-                davali_adi: davaliAdi || '...',
-                davali_adres: davaliAdres || '...',
-                konu: konu || dilekceKonular[selectedDilekceType] || 'Dava',
-                aciklamalar: aciklamalar,
-                talepler: talepler || 'Yukarıda açıklanan nedenlerle davanın kabulünü talep ederim.',
-                dilekce_turu: selectedDilekceType || 'genel'
-            })
+            body: JSON.stringify(payload)
         });
 
         if (!response.ok) {
-            throw new Error('PDF oluşturulamadı');
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.detail || 'PDF oluşturulamadı (Sunucu Hatası)');
         }
 
-        // Download PDF
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
+
+        const typeName = (dilekceTypeNames[selectedDilekceType] || 'Dilekce').substring(0, 30);
+        const cleanName = typeName.replace(/[^a-zA-Z0-9]/g, '_');
+
         a.href = url;
-
-        // Create meaningful filename from type name
-        const typeName = dilekceTypeNames[selectedDilekceType] || 'Dilekce';
-        const cleanFileName = typeName
-            .replace(/\s+/g, '_')
-            .replace(/[ğ]/g, 'g').replace(/[Ğ]/g, 'G')
-            .replace(/[ü]/g, 'u').replace(/[Ü]/g, 'U')
-            .replace(/[ş]/g, 's').replace(/[Ş]/g, 'S')
-            .replace(/[ı]/g, 'i').replace(/[İ]/g, 'I')
-            .replace(/[ö]/g, 'o').replace(/[Ö]/g, 'O')
-            .replace(/[ç]/g, 'c').replace(/[Ç]/g, 'C')
-            .replace(/[^a-zA-Z0-9_]/g, '');
-
-        a.download = `${cleanFileName}.pdf`;
+        a.download = `${cleanName}.pdf`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
 
-        alert('✅ Dilekçe PDF olarak indirildi!');
+        alert('✅ Profesyonel Dilekçeniz Hazır! (AI Tarafından Düzenlendi)');
 
     } catch (error) {
-        console.error('Error:', error);
-        alert('PDF oluşturulurken hata oluştu. Lütfen tekrar deneyin.');
+        console.error('PDF Hatası:', error);
+        alert('Hata: ' + error.message + '\n\nLütfen backend sunucusunun (localhost:8000) çalıştığından emin olun.');
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
+
+async function downloadDilekceUDF() {
+    const btn = document.getElementById('udf-submit');
+    const originalText = btn.innerHTML;
+
+    // Helper to safely get values
+    const getVal = (id) => document.getElementById(id)?.value?.trim() || '';
+
+    const mahkeme = getVal('dilekce-mahkeme') || 'ASLİYE HUKUK MAHKEMESİ HAKİMLİĞİNE';
+    const davaciAdi = getVal('dilekce-davaci-adi');
+    const davaciTc = getVal('dilekce-davaci-tc');
+    const davaciAdres = getVal('dilekce-davaci-adres');
+    const davaliAdi = getVal('dilekce-davali-adi');
+    const davaliAdres = getVal('dilekce-davali-adres');
+    const konu = getVal('dilekce-konu');
+    const aciklamalar = getVal('dilekce-aciklamalar');
+    const talepler = getVal('dilekce-talepler');
+
+    if (!davaciAdi || !aciklamalar) {
+        alert('Lütfen bilgileri doldurun.');
+        return;
+    }
+
+    btn.innerHTML = '✨ Hazırlanıyor...';
+    btn.disabled = true;
+
+    try {
+        const formData = new FormData();
+        formData.append('mahkeme', mahkeme);
+        formData.append('davaci_adi', davaciAdi);
+        formData.append('davaci_tc', davaciTc);
+        formData.append('davaci_adres', davaciAdres);
+        formData.append('davali_adi', davaliAdi);
+        formData.append('davali_adres', davaliAdres);
+        formData.append('konu', konu || (dilekceKonular[selectedDilekceType] || 'Dava'));
+        formData.append('aciklamalar', aciklamalar);
+        formData.append('talepler', talepler || 'Gereğinin yapılmasını arz ederim.');
+        formData.append('dilekce_turu', dilekceTypeNames[selectedDilekceType] || 'Genel');
+
+        const response = await fetch(`${API_BASE_URL}/api/dilekce/udf`, {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error('UDF sunucudan alınamadı');
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+
+        const typeName = (dilekceTypeNames[selectedDilekceType] || 'Dilekce').substring(0, 30);
+        const cleanName = typeName.replace(/[^a-zA-Z0-9]/g, '_');
+
+        a.href = url;
+        a.download = `${cleanName}.udf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        alert('✅ UDF Dosyası Hazır!');
+
+    } catch (error) {
+        console.error('UDF Hatası:', error);
+        alert('UDF Hatası: Sunucu yanıt vermedi.');
     } finally {
         btn.innerHTML = originalText;
         btn.disabled = false;
@@ -742,6 +1155,103 @@ function setupDragAndDrop() {
     });
 }
 
+// ============== WIZARD FUNCTIONS ==============
+
+let currentStep = 1;
+const totalSteps = 4;
+
+// Initialize Wizard (if needed)
+function initWizard() {
+    updateWizardUI();
+}
+
+function updateWizardUI() {
+    // Show/Hide Steps
+    document.querySelectorAll('.wizard-step').forEach(step => {
+        step.classList.remove('active');
+        if (step.id === `step-${currentStep}`) {
+            step.classList.add('active');
+        }
+    });
+
+    // Update Progress Bar
+    document.querySelectorAll('.progress-step').forEach(step => {
+        const stepNum = parseInt(step.dataset.step);
+        step.classList.remove('active', 'completed');
+        if (stepNum === currentStep) {
+            step.classList.add('active');
+        } else if (stepNum < currentStep) {
+            step.classList.add('completed');
+        }
+    });
+
+    // Update Buttons
+    const prevBtn = document.getElementById('wizard-prev');
+    const nextBtn = document.getElementById('wizard-next');
+    const submitBtn = document.getElementById('wizard-submit');
+    const udfBtn = document.getElementById('udf-submit');
+
+    if (prevBtn) prevBtn.disabled = currentStep === 1;
+
+    if (nextBtn && submitBtn) {
+        if (currentStep === totalSteps) {
+            nextBtn.style.display = 'none';
+            submitBtn.style.display = 'flex';
+            if (udfBtn) udfBtn.style.display = 'flex';
+        } else {
+            nextBtn.style.display = 'flex';
+            submitBtn.style.display = 'none';
+            if (udfBtn) udfBtn.style.display = 'none';
+        }
+    }
+}
+
+function validateStep(step) {
+    if (step === 1) {
+        const name = document.getElementById('dilekce-davaci-adi').value.trim();
+        const tc = document.getElementById('dilekce-davaci-tc').value.trim();
+        if (!name) {
+            alert('Lütfen Ad Soyad alanını doldurun.');
+            return false;
+        }
+        if (tc && tc.length !== 11) {
+            alert('T.C. Kimlik No 11 haneli olmalıdır.');
+            return false;
+        }
+    }
+    if (step === 3) {
+        const konu = document.getElementById('dilekce-konu').value.trim();
+        const aciklama = document.getElementById('dilekce-aciklamalar').value.trim();
+        if (!konu || !aciklama) {
+            alert('Lütfen Konu ve Olayın Özeti alanlarını doldurun.');
+            return false;
+        }
+    }
+    return true;
+}
+
+function nextStep() {
+    if (validateStep(currentStep)) {
+        if (currentStep < totalSteps) {
+            currentStep++;
+            updateWizardUI();
+        }
+    }
+}
+
+function prevStep() {
+    if (currentStep > 1) {
+        currentStep--;
+        updateWizardUI();
+    }
+}
+
+// Call initWizard when showing the dilekce section
+// This relies on the updated app.html calling this script
+document.addEventListener('DOMContentLoaded', () => {
+    initWizard();
+});
+
 function handleFileUpload(event) {
     const file = event.target.files[0];
     if (file) {
@@ -750,10 +1260,12 @@ function handleFileUpload(event) {
 }
 
 async function handleFile(file) {
-    const validTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
+    const validTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain', 'application/xml', 'text/xml'];
+    // UDF files are technically XML, but might have empty MIME or binary stream depending on OS
+    const isUdf = file.name.toLowerCase().endsWith('.udf');
 
-    if (!validTypes.includes(file.type) && !file.name.endsWith('.txt')) {
-        alert('Lütfen PDF, DOCX veya TXT dosyası yükleyin.');
+    if (!validTypes.includes(file.type) && !file.name.endsWith('.txt') && !isUdf) {
+        alert('Lütfen PDF, DOCX, TXT veya UDF dosyası yükleyin.');
         return;
     }
 
@@ -1008,7 +1520,7 @@ async function searchEmsalMulti() {
 
     try {
         const response = await fetch(
-            `${API_BASE_URL}/api/legal/search?query=${encodeURIComponent(query)}&sources=${sources.join(',')}&limit=10`
+            `${API_BASE_URL}/api/legal/search?query=${encodeURIComponent(query)}&sources=${sources.join(',')}&limit=30`
         );
         const data = await response.json();
 
@@ -1081,7 +1593,7 @@ async function searchEmsal() {
 
     try {
         // Use new Yargıtay search endpoint
-        const response = await fetch(`${API_BASE_URL}/api/yargitay/search?query=${encodeURIComponent(query)}&limit=10`);
+        const response = await fetch(`${API_BASE_URL}/api/yargitay/search?query=${encodeURIComponent(query)}&limit=30`);
         const data = await response.json();
 
         if (data.results && data.results.length > 0) {
@@ -1229,5 +1741,143 @@ function loadConversation(id) {
         });
 
         showSection('chat');
+    }
+}
+
+// ============== MOBILE SIDEBAR ==============
+
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+
+    // Create overlay if not exists
+    if (!overlay && sidebar) {
+        const newOverlay = document.createElement('div');
+        newOverlay.id = 'sidebar-overlay';
+        newOverlay.className = 'sidebar-overlay';
+        newOverlay.onclick = toggleSidebar;
+        document.body.appendChild(newOverlay);
+
+        // Small delay to allow transition
+        setTimeout(() => newOverlay.classList.add('active'), 10);
+        sidebar.classList.add('active');
+    } else if (overlay) {
+        // Close
+        sidebar.classList.remove('active');
+        overlay.classList.remove('active');
+        setTimeout(() => overlay.remove(), 300);
+    } else {
+        // Just open sidebar (fallback)
+        sidebar.classList.toggle('active');
+    }
+}
+
+// Close sidebar on nav click (mobile)
+document.addEventListener('DOMContentLoaded', () => {
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+        item.addEventListener('click', () => {
+            if (window.innerWidth <= 768) {
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('sidebar-overlay');
+                if (sidebar && sidebar.classList.contains('active')) {
+                    sidebar.classList.remove('active');
+                    if (overlay) {
+                        overlay.classList.remove('active');
+                        setTimeout(() => overlay.remove(), 300);
+                    }
+                }
+            }
+        });
+    });
+});
+
+// ============== LEGAL MODALS ==============
+
+const legalTexts = {
+    privacy: {
+        title: 'Gizlilik Politikası',
+        content: `<p><strong>Son Güncelleme: 28.12.2024</strong></p>
+        <p>JustLaw olarak gizliliğinize önem veriyoruz. Bu politika, kişisel verilerinizin nasıl toplandığını, kullanıldığını ve korunduğunu açıklar.</p>
+        <h3>1. Toplanan Veriler</h3>
+        <p>Hizmetimizi kullanırken adınız, e-posta adresiniz ve sisteme yüklediğiniz belgelerin içerikleri işlenmektedir. Bu veriler sadece hizmetin sağlanması amacıyla kullanılır.</p>
+        <h3>2. Veri Güvenliği</h3>
+        <p>Verileriniz endüstri standardı şifreleme yöntemleri ile korunmaktadır. Yüklediğiniz belgeler analiz edildikten sonra sistemlerimizden otomatik olarak silinir veya sadece sizin erişiminize açık şekilde saklanır.</p>
+        <h3>3. Üçüncü Taraflar</h3>
+        <p>Yasal zorunluluklar haricinde verileriniz üçüncü taraflarla paylaşılmaz. Ödeme işlemleri Shopier aracılığıyla güvenli bir şekilde gerçekleştirilir.</p>
+        <p>Detaylı bilgi için destek@justlaw.com adresinden bize ulaşabilirsiniz.</p>`
+    },
+    terms: {
+        title: 'Kullanım Koşulları',
+        content: `<p><strong>Son Güncelleme: 28.12.2024</strong></p>
+        <p>JustLaw'ı kullanarak aşağıdaki koşulları kabul etmiş sayılırsınız.</p>
+        <h3>1. Hizmetin Niteliği</h3>
+        <p>JustLaw, yapay zeka destekli bir hukuki asistan hizmetidir. <strong>Sistem tarafından üretilen içerikler hukuki tavsiye niteliği taşımaz.</strong> Hukuki kararlar almadan önce mutlaka bir avukata danışmanız önerilir.</p>
+        <h3>2. Sorumluluk Reddi</h3>
+        <p>Oluşturulan dilekçeler, sözleşme analizleri ve emsal karar aramaları bilgilendirme amaçlıdır. JustLaw, bu içeriklerin doğruluğu veya güncelliği konusunda garanti vermez ve kullanımından doğacak zararlardan sorumlu tutulamaz.</p>
+        <h3>3. Fikri Mülkiyet</h3>
+        <p>Uygulamanın tasarımı, logosu ve yazılımı JustLaw'a aittir. İzinsiz kopyalanması yasaktır.</p>`
+    },
+    kvkk: {
+        title: 'KVKK Aydınlatma Metni',
+        content: `<p>6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") uyarınca, JustLaw olarak veri sorumlusu sıfatıyla kişisel verilerinizi işlemekteyiz.</p>
+        <h3>1. İşlenen Kişisel Veriler</h3>
+        <p>Kimlik bilgileri (Ad, Soyad), İletişim bilgileri (E-posta), İşlem güvenliği bilgileri (Log kayıtları).</p>
+        <h3>2. İşleme Amaçları</h3>
+        <p>Üyelik işlemlerinin gerçekleştirilmesi, hizmetlerin sunulması, yasal yükümlülüklerin yerine getirilmesi.</p>
+        <h3>3. Haklarınız</h3>
+        <p>KVKK'nın 11. maddesi uyarınca verilerinizin silinmesini, düzeltilmesini veya bilgi talep etme hakkına sahipsiniz.</p>`
+    }
+};
+
+window.openLegalModal = function (type) {
+    const modal = document.getElementById('legal-modal-backdrop');
+    const title = document.getElementById('legal-modal-title');
+    const content = document.getElementById('legal-modal-content');
+
+    if (legalTexts[type]) {
+        title.textContent = legalTexts[type].title;
+        content.innerHTML = legalTexts[type].content;
+        modal.style.display = 'flex';
+    }
+}
+
+window.closeLegalModal = function () {
+    document.getElementById('legal-modal-backdrop').style.display = 'none';
+}
+
+// Close modal on outside click
+document.getElementById('legal-modal-backdrop')?.addEventListener('click', (e) => {
+    if (e.target === document.getElementById('legal-modal-backdrop')) {
+        window.closeLegalModal();
+    }
+});
+
+// ============== ACCOUNT DELETION ==============
+
+window.handleDeleteAccount = async function () {
+    if (confirm('DİKKAT: Hesabınızı silmek istediğinize emin misiniz? Bu işlem geri alınamaz ve tüm verileriniz (dilekçeler, kayıtlar) kalıcı olarak silinir.')) {
+        const btn = document.querySelector('.delete-account-btn');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = 'Siliniyor...';
+        btn.disabled = true;
+
+        if (typeof window.deleteAccount !== 'function') {
+            alert('Hata: deleteAccount fonksiyonu yüklenemedi. Sayfayı yenileyip tekrar deneyin.');
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            return;
+        }
+
+        const result = await window.deleteAccount();
+
+        if (result.success) {
+            alert('Hesabınız başarıyla silindi. Ana sayfaya yönlendiriliyorsunuz.');
+            window.location.reload();
+        } else {
+            alert('Hata: ' + result.error);
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
     }
 }

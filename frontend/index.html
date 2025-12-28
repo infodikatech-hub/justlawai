@@ -15,9 +15,9 @@
     <meta name="msapplication-TileColor" content="#0f0f0f">
     <meta name="msapplication-TileImage" content="icons/icon-144x144.png">
 
-    <title>JustLaw - Türk Hukuku AI Asistanı</title>
+    <title>JustLaw - Yapay Zeka Destekli Hukuk Asistanı ve Dilekçe Rehberi</title>
     <meta name="description"
-        content="Türk Hukuku hakkında yapay zeka destekli hukuki asistan. Mevzuat araması, dilekçe oluşturma ve sözleşme analizi.">
+        content="JustLaw ile hukuki sorularınıza saniyeler içinde yanıt bulun. Türk hukuku yapay zeka destekli asistanınız ile tanışın. Hemen ücretsiz deneyin.">
 
     <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
@@ -32,528 +32,978 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-    <!-- Styles -->
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/landing.css">
+    <link rel="stylesheet" href="css/install-guide.css">
+
+    <!-- Schema Markup -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "JustLaw",
+      "applicationCategory": "LegalApplication",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "TRY"
+      }
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [{
+        "@type": "Question",
+        "name": "JustLaw avukat yerine geçer mi?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Hayır, JustLaw bir yapay zeka asistanıdır ve hukuki bilgilendirme amacı taşır. Kesin hukuki yargı ve temsil için bir avukata danışmanız önerilir."
+        }
+      }, {
+        "@type": "Question",
+        "name": "Verilerim güvende mi?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Evet, verileriniz 256-bit SSL ile şifrelenir ve KVKK standartlarına uygun olarak korunur."
+        }
+      }]
+    }
+    </script>
 </head>
 
 <body>
-    <div id="app">
-        <!-- Sidebar -->
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <div class="logo">
-                    <div class="logo-icon" style="font-weight: bold; font-size: 24px;">JL</div>
-                    <span class="logo-text">JustLaw</span>
-                </div>
-                <button class="new-chat-btn" onclick="startNewChat()">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="container navbar-content">
+            <a href="#" class="logo">
+                <img src="images/logo.svg" alt="JustLaw - Yapay Zeka Hukuk Asistanı" class="logo-img">
+                <span class="logo-text">JustLaw</span>
+            </a>
+
+            <div class="nav-links">
+                <a href="#features">Özellikler</a>
+                <a href="#how-it-works">Nasıl Çalışır</a>
+                <a href="#pricing">Fiyatlandırma</a>
+            </div>
+
+            <div class="nav-actions">
+                <button class="theme-toggle" onclick="toggleTheme()" title="Tema Değiştir">
+                    <span class="theme-icon">🌙</span>
+                </button>
+                <button class="btn btn-ghost" onclick="showModal('login')">Giriş Yap</button>
+                <button class="btn btn-primary" onclick="showModal('register')">Ücretsiz Başla</button>
+                <button class="nav-install-btn" id="nav-install-btn" onclick="installPWA()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
                     </svg>
-                    Yeni Sohbet
+                    Yükle
                 </button>
             </div>
 
-            <nav class="sidebar-nav">
-                <div class="nav-section">
-                    <h3>Özellikler</h3>
-                    <a href="#" class="nav-item active" onclick="showSection('chat')">
-                        Hukuki Danışman
-                    </a>
-                    <a href="#" class="nav-item" onclick="showSection('dilekce')">
-                        Dilekçe Oluştur
-                    </a>
-                    <a href="#" class="nav-item" onclick="showSection('sozlesme')">
-                        Sözleşme Analizi
-                    </a>
-                    <a href="#" class="nav-item" onclick="showSection('emsal')">
-                        Emsal Kararlar
-                    </a>
-                </div>
+            <button class="mobile-menu-btn" onclick="toggleMobileMenu()">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </nav>
 
-                <div class="nav-section">
-                    <h3>Son Sohbetler</h3>
-                    <div id="chat-history">
-                        <!-- Dynamic content -->
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <span class="pulse-dot"></span>
+                    <span id="typewriter-text">Yapay Zeka Destekli</span>
+                    <span class="cursor">|</span>
+                </div>
+                <h1>Türkiye'nin Yapay Zeka Destekli İlk Hukuk Asistanı: JustLaw</h1>
+                <p class="hero-description">
+                    <strong>Online hukuki danışma asistanı</strong> ile <strong>hukuk soruları sor</strong> ve anında
+                    yanıt al.
+                    <strong>Dilekçe yazdırma yapay zeka</strong> teknolojisi, sözleşme analizi ve <strong>Türk hukuku
+                        yapay zeka</strong> altyapısı ile yanınızda.
+                </p>
+                <div class="hero-cta">
+                    <button class="btn btn-primary btn-lg" onclick="showModal('register')">
+                        Ücretsiz Deneyin
+                        <span class="btn-arrow">→</span>
+                    </button>
+                    <button class="btn btn-ghost btn-lg" onclick="scrollToSection('features')">
+                        Özellikleri Keşfet
+                    </button>
+                </div>
+                <div class="hero-stats">
+                    <div class="stat">
+                        <span class="stat-number">10,000+</span>
+                        <span class="stat-label">Kullanıcı</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">50,000+</span>
+                        <span class="stat-label">Soru Yanıtlandı</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">%95</span>
+                        <span class="stat-label">Memnuniyet</span>
                     </div>
                 </div>
-            </nav>
-
-            <div class="sidebar-footer">
-                <button class="nav-item theme-toggle-btn" onclick="toggleAppTheme()">
-                    <span class="theme-icon-app">🌙</span>
-                    <span>Tema Değiştir</span>
-                </button>
-                <a href="#" class="nav-item" onclick="showSection('pricing')">
-                    Premium
-                </a>
-                <a href="#" class="nav-item" onclick="showSection('settings')">
-                    Ayarlar
-                </a>
             </div>
-        </aside>
-
-        <!-- Main Content -->
-        <main class="main-content">
-            <!-- Chat Section -->
-            <section id="chat-section" class="section active">
-                <div class="chat-container">
-                    <div class="chat-messages" id="chat-messages">
-                        <!-- Welcome Screen -->
-                        <div class="welcome-screen" id="welcome-screen">
-                            <div class="welcome-icon">⚖️</div>
-                            <h1>JustLaw'a Hoş Geldiniz</h1>
-                            <p>Türk Hukuku hakkında sorularınızı sorun. Mevzuat ve Yargıtay kararlarına dayalı yanıtlar
-                                alın.</p>
-
-                            <div class="suggestion-chips">
-                                <button class="chip" onclick="sendSuggestion('İhbar tazminatı nasıl hesaplanır?')">
-                                    İhbar tazminatı nasıl hesaplanır?
-                                </button>
-                                <button class="chip" onclick="sendSuggestion('Kira sözleşmesi feshi prosedürü nedir?')">
-                                    Kira sözleşmesi feshi prosedürü
-                                </button>
-                                <button class="chip"
-                                    onclick="sendSuggestion('İş kazasında işverenin sorumlulukları nelerdir?')">
-                                    İş kazasında işveren sorumluluğu
-                                </button>
-                                <button class="chip" onclick="sendSuggestion('Boşanma davası süreci nasıl işler?')">
-                                    Boşanma davası süreci
-                                </button>
-                            </div>
+            <div class="hero-visual">
+                <div class="hero-mockup">
+                    <div class="mockup-header">
+                        <div class="mockup-dots">
+                            <span></span><span></span><span></span>
                         </div>
+                        <span id="mockup-title">JustLaw AI</span>
                     </div>
 
-                    <!-- Input Area -->
-                    <div class="chat-input-container">
-                        <div class="input-wrapper">
-                            <textarea id="message-input" placeholder="Hukuki sorunuzu yazın..." rows="1"
-                                onkeydown="handleKeyDown(event)" oninput="autoResize(this)"></textarea>
-                            <button class="send-btn" id="send-btn" onclick="sendMessage()">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2">
-                                    <line x1="22" y1="2" x2="11" y2="13"></line>
-                                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                                </svg>
-                            </button>
-                        </div>
-                        <p class="disclaimer">JustLaw hukuki bilgi sağlar, hukuki tavsiye değildir. Önemli kararlar için
-                            avukata danışın.</p>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Dilekçe Section -->
-            <section id="dilekce-section" class="section">
-                <div class="feature-container" style="overflow-y: auto; height: 100%;">
-                    <h2>Dilekçe Oluşturucu</h2>
-                    <p>Bilgileri doldurun, AI destekli profesyonel dilekçe oluşturun ve PDF olarak indirin.</p>
-
-                    <!-- Dilekçe Type Selection -->
-                    <div id="dilekce-types" class="dilekce-types">
-                        <!-- Hukuk Davaları -->
-                        <div class="dilekce-category">
-                            <h4 class="category-title">Hukuk Davaları</h4>
-                            <div class="category-items">
-                                <div class="type-card" onclick="selectDilekce('alacak-davasi')">
-                                    <h3>Alacak Davası</h3>
-                                    <p>Alacak ve tazminat talepleri</p>
-                                </div>
-                                <div class="type-card" onclick="selectDilekce('bosanma')">
-                                    <h3>Boşanma Davası</h3>
-                                    <p>Anlaşmalı/çekişmeli boşanma</p>
-                                </div>
-                                <div class="type-card" onclick="selectDilekce('velayet')">
-                                    <h3>Velayet Davası</h3>
-                                    <p>Çocuk velayeti talepleri</p>
-                                </div>
-                                <div class="type-card" onclick="selectDilekce('nafaka')">
-                                    <h3>Nafaka Davası</h3>
-                                    <p>Nafaka artırım/azaltım</p>
-                                </div>
-                                <div class="type-card" onclick="selectDilekce('miras')">
-                                    <h3>Miras Davası</h3>
-                                    <p>Miras taksimi, tenkis</p>
+                    <div class="feature-showcase">
+                        <!-- Slide 1: AI Assistant (Active) -->
+                        <div class="feature-slide active" data-feature="assistant">
+                            <div class="mockup-content">
+                                <div class="chat-bubble user">Kıdem tazminatı nasıl hesaplanır?</div>
+                                <div class="chat-bubble ai">
+                                    <div class="typing-indicator">
+                                        <span></span><span></span><span></span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- İş Hukuku -->
-                        <div class="dilekce-category">
-                            <h4 class="category-title">İş Hukuku</h4>
-                            <div class="category-items">
-                                <div class="type-card" onclick="selectDilekce('kidem-tazminati')">
-                                    <h3>Kıdem Tazminatı</h3>
-                                    <p>Kıdem ve ihbar tazminatı</p>
+                        <!-- Slide 2: Precedent Finder -->
+                        <div class="feature-slide" data-feature="precedent">
+                            <div class="mockup-content padding-lg">
+                                <div class="search-bar-mockup">
+                                    <span class="search-icon">🔍</span>
+                                    <span class="search-text">Yargıtay 9. Hukuk, işe iade...</span>
                                 </div>
-                                <div class="type-card" onclick="selectDilekce('ise-iade')">
-                                    <h3>İşe İade</h3>
-                                    <p>Haksız feshe itiraz</p>
+                                <div class="result-card-mockup">
+                                    <div class="result-line title"></div>
+                                    <div class="result-line text"></div>
+                                    <div class="result-line text short"></div>
                                 </div>
-                                <div class="type-card" onclick="selectDilekce('fazla-mesai')">
-                                    <h3>Fazla Mesai</h3>
-                                    <p>Fazla mesai ücreti alacağı</p>
-                                </div>
-                                <div class="type-card" onclick="selectDilekce('is-kazasi')">
-                                    <h3>İş Kazası</h3>
-                                    <p>İş kazası tazminatı</p>
+                                <div class="result-card-mockup opaque">
+                                    <div class="result-line title"></div>
+                                    <div class="result-line text"></div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- İcra ve İflas -->
-                        <div class="dilekce-category">
-                            <h4 class="category-title">İcra ve İflas Hukuku</h4>
-                            <div class="category-items">
-                                <div class="type-card" onclick="selectDilekce('icra-itiraz')">
-                                    <h3>İcra İtirazı</h3>
-                                    <p>Ödeme emrine itiraz</p>
-                                </div>
-                                <div class="type-card" onclick="selectDilekce('itirazin-iptali')">
-                                    <h3>İtirazın İptali</h3>
-                                    <p>Borçlu itirazının iptali</p>
-                                </div>
-                                <div class="type-card" onclick="selectDilekce('menfi-tespit')">
-                                    <h3>Menfi Tespit</h3>
-                                    <p>Borçlu olmadığının tespiti</p>
-                                </div>
-                                <div class="type-card" onclick="selectDilekce('istirdat')">
-                                    <h3>İstirdat Davası</h3>
-                                    <p>Fazla ödenen paranın iadesi</p>
-                                </div>
+                        <!-- Slide 3: Petition Analysis -->
+                        <div class="feature-slide" data-feature="analysis">
+                            <div class="mockup-content center-content">
+                                <div class="doc-icon-large">📄</div>
+                                <div class="scan-line"></div>
+                                <div class="analysis-badge warning">⚠️ Eksik İmza</div>
+                                <div class="analysis-badge success">✅ Hukuki Dayanak</div>
                             </div>
                         </div>
 
-                        <!-- Kira ve Gayrimenkul -->
-                        <div class="dilekce-category">
-                            <h4 class="category-title">Kira ve Gayrimenkul</h4>
-                            <div class="category-items">
-                                <div class="type-card" onclick="selectDilekce('tahliye')">
-                                    <h3>Tahliye Davası</h3>
-                                    <p>Kiracı tahliyesi</p>
+                        <!-- Slide 4: Petition Creation -->
+                        <div class="feature-slide" data-feature="creation">
+                            <div class="mockup-content padding-lg">
+                                <div class="form-row">
+                                    <div class="form-label"></div>
+                                    <div class="form-input"></div>
                                 </div>
-                                <div class="type-card" onclick="selectDilekce('kira-tespit')">
-                                    <h3>Kira Tespit</h3>
-                                    <p>Kira bedelinin tespiti</p>
+                                <div class="form-row">
+                                    <div class="form-label short"></div>
+                                    <div class="form-input"></div>
                                 </div>
-                                <div class="type-card" onclick="selectDilekce('kira-alacagi')">
-                                    <h3>Kira Alacağı</h3>
-                                    <p>Ödenmeyen kira bedeli</p>
-                                </div>
-                                <div class="type-card" onclick="selectDilekce('elatmanin-onlenmesi')">
-                                    <h3>El Atmanın Önlenmesi</h3>
-                                    <p>Müdahalenin men'i davası</p>
+                                <div class="form-text-area">
+                                    <div class="text-line"></div>
+                                    <div class="text-line"></div>
+                                    <div class="text-line short"></div>
                                 </div>
                             </div>
-                        </div>
-
-                        <!-- Tüketici ve Ticaret -->
-                        <div class="dilekce-category">
-                            <h4 class="category-title">Tüketici ve Ticaret Hukuku</h4>
-                            <div class="category-items">
-                                <div class="type-card" onclick="selectDilekce('tuketici')">
-                                    <h3>Tüketici Davası</h3>
-                                    <p>Ayıplı mal/hizmet şikayeti</p>
-                                </div>
-                                <div class="type-card" onclick="selectDilekce('fatura-itiraz')">
-                                    <h3>Fatura İtirazı</h3>
-                                    <p>Haksız faturaya itiraz</p>
-                                </div>
-                                <div class="type-card" onclick="selectDilekce('ticari-alacak')">
-                                    <h3>Ticari Alacak</h3>
-                                    <p>Ticari alacak tahsili</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- İdari Davalar -->
-                        <div class="dilekce-category">
-                            <h4 class="category-title">İdari Davalar</h4>
-                            <div class="category-items">
-                                <div class="type-card" onclick="selectDilekce('iptal-davasi')">
-                                    <h3>İptal Davası</h3>
-                                    <p>İdari işlemin iptali</p>
-                                </div>
-                                <div class="type-card" onclick="selectDilekce('tam-yargi')">
-                                    <h3>Tam Yargı Davası</h3>
-                                    <p>İdari tazminat talebi</p>
-                                </div>
-                                <div class="type-card" onclick="selectDilekce('vergi-itiraz')">
-                                    <h3>Vergi İtirazı</h3>
-                                    <p>Vergi cezasına itiraz</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Dilekçe Form -->
-                    <div id="dilekce-form" style="display: none;">
-                        <button class="back-btn" onclick="showDilekceTypes()">← Geri</button>
-                        <h3 id="dilekce-form-title">Dilekçe Bilgileri</h3>
-
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label>Mahkeme</label>
-                                <input type="text" id="dilekce-mahkeme"
-                                    placeholder="Örn: İstanbul Asliye Hukuk Mahkemesi">
-                            </div>
-                            <div class="form-group">
-                                <label>Davacı Adı</label>
-                                <input type="text" id="dilekce-davaci-adi" placeholder="Davacının adı soyadı">
-                            </div>
-                            <div class="form-group">
-                                <label>Davacı TC</label>
-                                <input type="text" id="dilekce-davaci-tc" placeholder="11 haneli TC no" maxlength="11"
-                                    pattern="[0-9]{11}" inputmode="numeric"
-                                    oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11)">
-                            </div>
-                            <div class="form-group full-width">
-                                <label>Davacı Adresi</label>
-                                <textarea id="dilekce-davaci-adres" rows="2" placeholder="Davacının adresi"></textarea>
-                            </div>
-                            <div class="form-group">
-                                <label>Davalı Adı</label>
-                                <input type="text" id="dilekce-davali-adi" placeholder="Davalının adı">
-                            </div>
-                            <div class="form-group full-width">
-                                <label>Davalı Adresi</label>
-                                <textarea id="dilekce-davali-adres" rows="2" placeholder="Davalının adresi"></textarea>
-                            </div>
-                            <div class="form-group full-width">
-                                <label>Konu</label>
-                                <input type="text" id="dilekce-konu"
-                                    placeholder="Dilekçenin konusu (AI otomatik zenginleştirecek)">
-                            </div>
-                            <div class="form-group full-width">
-                                <label>Açıklamalar</label>
-                                <textarea id="dilekce-aciklamalar" rows="5"
-                                    placeholder="Olayları kısaca anlatın. AI, hukuki dile çevirecek."></textarea>
-                            </div>
-                            <div class="form-group full-width">
-                                <label>Talepler (Sonuç ve İstem)</label>
-                                <textarea id="dilekce-talepler" rows="3"
-                                    placeholder="Mahkemeden ne talep ediyorsunuz? (AI otomatik düzenleyecek)"></textarea>
-                            </div>
-
-                            <!-- Ek Dosyalar -->
-                            <div class="form-group full-width">
-                                <label>Ekler (Opsiyonel)</label>
-                                <div class="attachment-area" id="dilekce-attachments">
-                                    <input type="file" id="dilekce-files" multiple
-                                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" hidden
-                                        onchange="handleAttachments(event)">
-                                    <button type="button" class="upload-btn-small"
-                                        onclick="document.getElementById('dilekce-files').click()">
-                                        📎 Dosya Ekle
-                                    </button>
-                                    <div id="attachment-list" class="attachment-list"></div>
-                                </div>
-                                <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Delil veya ek
-                                    belge yükleyebilirsiniz (PDF, resim, Word)</p>
-                            </div>
-                        </div>
-
-                        <div class="form-actions">
-                            <button class="btn-primary" onclick="generateDilekcePDF()" id="generate-pdf-btn">
-                                🤖 AI ile PDF Oluştur
-                            </button>
                         </div>
                     </div>
                 </div>
-            </section>
+            </div>
+        </div>
+        <div class="hero-gradient"></div>
+    </section>
 
-            <!-- Sözleşme Analizi Section -->
-            <section id="sozlesme-section" class="section">
-                <div class="feature-container">
-                    <h2>Sözleşme Analizi</h2>
-                    <p>Sözleşmenizi yükleyin, riskli maddeleri tespit edelim.</p>
-
-                    <div class="upload-area" id="upload-area">
-                        <div class="upload-icon">📁</div>
-                        <h3>Sözleşme Dosyasını Yükleyin</h3>
-                        <p>PDF veya DOCX formatında, maksimum 20MB</p>
-                        <input type="file" id="file-input" accept=".pdf,.docx" hidden
-                            onchange="handleFileUpload(event)">
-                        <button class="upload-btn" onclick="document.getElementById('file-input').click()">
-                            Dosya Seç
-                        </button>
+    <!-- Trusted Sources Section -->
+    <section class="trusted-sources">
+        <div class="container">
+            <p class="trusted-label">🏛️ Türkiye'nin Resmi Hukuk Kaynaklarından Veri Alıyoruz</p>
+            <div class="sources-marquee">
+                <div class="sources-track">
+                    <div class="source-item">
+                        <img src="images/yargitay.webp" alt="Yargıtay Logosu">
+                        <span>Yargıtay</span>
                     </div>
-
-                    <div class="analysis-result" id="analysis-result" style="display: none;">
-                        <!-- Analysis results will appear here -->
+                    <div class="source-item">
+                        <img src="images/danistay.webp" alt="Danıştay Logosu">
+                        <span>Danıştay</span>
                     </div>
-                </div>
-            </section>
-
-            <!-- Emsal Kararlar Section -->
-            <section id="emsal-section" class="section">
-                <div class="feature-container">
-                    <h2>⚖️ Emsal Karar Bulucu</h2>
-                    <p>Yargıtay, Danıştay, Anayasa Mahkemesi ve Rekabet Kurumu kararlarını arayın.</p>
-
-                    <!-- Source Selector -->
-                    <div class="source-selector"
-                        style="background: var(--bg-card); padding: 16px; border-radius: var(--radius); margin-bottom: 20px; border: 1px solid var(--border);">
-                        <label
-                            style="font-size: 14px; color: var(--text-secondary); margin-bottom: 10px; display: block;">Kaynak
-                            Seç:</label>
-                        <div style="display: flex; flex-wrap: wrap; gap: 16px;">
-                            <label class="source-checkbox">
-                                <input type="checkbox" id="source-yargitay" checked>
-                                <span>🏛️ Yargıtay</span>
-                            </label>
-                            <label class="source-checkbox">
-                                <input type="checkbox" id="source-danistay" checked>
-                                <span>📋 Danıştay</span>
-                            </label>
-                            <label class="source-checkbox">
-                                <input type="checkbox" id="source-anayasa">
-                                <span>⚖️ Anayasa Mahkemesi</span>
-                            </label>
-                            <label class="source-checkbox">
-                                <input type="checkbox" id="source-rekabet">
-                                <span>📊 Rekabet Kurumu</span>
-                            </label>
-                        </div>
+                    <div class="source-item">
+                        <img src="images/aym.webp" alt="Anayasa Mahkemesi Logosu">
+                        <span>Anayasa Mahkemesi</span>
                     </div>
-
-                    <div class="search-box">
-                        <input type="text" id="emsal-search" placeholder="Dava konusunu yazın...">
-                        <button class="search-btn" onclick="searchEmsalMulti()">🔍 Ara</button>
+                    <div class="source-item">
+                        <img src="images/rekabet.webp" alt="Rekabet Kurumu Logosu">
+                        <span>Rekabet Kurumu</span>
                     </div>
-
-                    <div class="emsal-results" id="emsal-results">
-                        <!-- Search results will appear here -->
+                    <div class="source-item">
+                        <img src="images/mevzuat.webp" alt="Mevzuat Logosu">
+                        <span>Mevzuat</span>
+                    </div>
+                    <div class="source-item">
+                        <img src="images/tbmm.webp" alt="TBMM Logosu">
+                        <span>TBMM</span>
+                    </div>
+                    <!-- Duplicate for seamless scroll -->
+                    <div class="source-item">
+                        <img src="images/yargitay.webp" alt="Yargıtay Logosu">
+                        <span>Yargıtay</span>
+                    </div>
+                    <div class="source-item">
+                        <img src="images/danistay.webp" alt="Danıştay Logosu">
+                        <span>Danıştay</span>
+                    </div>
+                    <div class="source-item">
+                        <img src="images/aym.webp" alt="Anayasa Mahkemesi Logosu">
+                        <span>Anayasa Mahkemesi</span>
+                    </div>
+                    <div class="source-item">
+                        <img src="images/rekabet.webp" alt="Rekabet Kurumu Logosu">
+                        <span>Rekabet Kurumu</span>
+                    </div>
+                    <div class="source-item">
+                        <img src="images/mevzuat.webp" alt="Mevzuat Logosu">
+                        <span>Mevzuat</span>
+                    </div>
+                    <div class="source-item">
+                        <img src="images/tbmm.webp" alt="TBMM Logosu">
+                        <span>TBMM</span>
                     </div>
                 </div>
-            </section>
+            </div>
+        </div>
+    </section>
 
-            <!-- Pricing Section -->
-            <section id="pricing-section" class="section">
-                <div class="pricing-container">
-                    <h2>💎 Premium Planlar</h2>
-                    <p>Profesyonel hukuki destek için premium özelliklere erişin.</p>
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="container">
+            <div class="section-header">
+                <h2>Güçlü Özellikler</h2>
+                <p>Türk Hukuku'na özel, yapay zeka destekli profesyonel araçlar</p>
+            </div>
 
-                    <div class="pricing-cards">
-                        <div class="pricing-card">
-                            <div class="card-header">
-                                <h3>Deneme</h3>
-                                <div class="price">Ücretsiz</div>
-                                <p>7 gün tam erişim</p>
-                            </div>
-                            <ul class="features">
-                                <li>✅ Sınırsız AI soru</li>
-                                <li>✅ 3 dilekçe oluşturma</li>
-                                <li>✅ 2 sözleşme analizi</li>
-                                <li>✅ Emsal karar arama</li>
-                            </ul>
-                            <button class="plan-btn trial">Denemeyi Başlat</button>
-                        </div>
-
-                        <div class="pricing-card popular">
-                            <div class="popular-badge">En Popüler</div>
-                            <div class="card-header">
-                                <h3>Profesyonel</h3>
-                                <div class="price">₺1.200<span>/ay</span></div>
-                                <p>Avukatlar ve danışmanlar için</p>
-                            </div>
-                            <ul class="features">
-                                <li>✅ Sınırsız AI soru</li>
-                                <li>✅ 20 dilekçe/ay</li>
-                                <li>✅ 10 sözleşme analizi/ay</li>
-                                <li>✅ Sınırsız emsal arama</li>
-                                <li>✅ E-posta destek</li>
-                            </ul>
-                            <button class="plan-btn pro">Satın Al</button>
-                        </div>
-
-                        <div class="pricing-card">
-                            <div class="card-header">
-                                <h3>Kurumsal</h3>
-                                <div class="price">₺2.000<span>/ay</span></div>
-                                <p>Hukuk büroları için</p>
-                            </div>
-                            <ul class="features">
-                                <li>✅ Tüm Profesyonel özellikler</li>
-                                <li>✅ Sınırsız dilekçe</li>
-                                <li>✅ Sınırsız sözleşme analizi</li>
-                                <li>✅ API erişimi</li>
-                                <li>✅ 3 kullanıcı</li>
-                                <li>✅ Öncelikli telefon destek</li>
-                            </ul>
-                            <button class="plan-btn enterprise">İletişime Geç</button>
-                        </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">💬</div>
+                    <h3>AI Hukuki Danışman</h3>
+                    <p>Gemini AI ile güçlendirilmiş chatbot, Türk Hukuku mevzuatı ve içtihatlarına dayalı detaylı
+                        yanıtlar sunar. Sorularınızı doğal dilde sorun, anında profesyonel cevap alın.</p>
+                    <ul class="feature-list">
+                        <li><svg class="icon-check" viewBox="0 0 24 24">
+                                <path d="M20 6L9 17l-5-5"></path>
+                            </svg> 7.000+ kanun ve yönetmelik bilgisi</li>
+                        <li><svg class="icon-check" viewBox="0 0 24 24">
+                                <path d="M20 6L9 17l-5-5"></path>
+                            </svg> Yargıtay ve Danıştay içtihatları</li>
+                        <li><svg class="icon-check" viewBox="0 0 24 24">
+                                <path d="M20 6L9 17l-5-5"></path>
+                            </svg> Kaynak gösterimli yanıtlar</li>
+                        <li><svg class="icon-check" viewBox="0 0 24 24">
+                                <path d="M20 6L9 17l-5-5"></path>
+                            </svg> 7/24 kesintisiz erişim</li>
+                        <li><svg class="icon-check" viewBox="0 0 24 24">
+                                <path d="M20 6L9 17l-5-5"></path>
+                            </svg> Türkçe doğal dil anlama</li>
+                    </ul>
+                    <div class="feature-stats">
+                        <span>⚡ Ortalama yanıt: 3 saniye</span>
                     </div>
                 </div>
-            </section>
 
-            <!-- Settings Section -->
-            <section id="settings-section" class="section">
-                <div class="feature-container">
-                    <h2>⚙️ Ayarlar</h2>
-                    <p>Hesap ve uygulama ayarlarınızı yönetin.</p>
-
-                    <div class="settings-grid">
-                        <div class="settings-card">
-                            <h3>👤 Hesap Bilgileri</h3>
-                            <div class="setting-item">
-                                <label>E-posta</label>
-                                <input type="email" id="user-email" placeholder="ornek@email.com" disabled>
-                            </div>
-                            <div class="setting-item">
-                                <label>Ad Soyad</label>
-                                <input type="text" id="user-name" placeholder="Adınız Soyadınız">
-                            </div>
-                            <button class="save-btn" onclick="saveProfile()">Kaydet</button>
-                        </div>
-
-                        <div class="settings-card">
-                            <h3>🔔 Bildirimler</h3>
-                            <div class="setting-toggle">
-                                <span>E-posta bildirimleri</span>
-                                <label class="switch">
-                                    <input type="checkbox" id="email-notifications" checked>
-                                    <span class="slider"></span>
-                                </label>
-                            </div>
-                            <div class="setting-toggle">
-                                <span>Yeni özellik duyuruları</span>
-                                <label class="switch">
-                                    <input type="checkbox" id="feature-notifications" checked>
-                                    <span class="slider"></span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <!-- Görünüm card removed -->
-
-                        <div class="settings-card">
-                            <h3>📊 Abonelik</h3>
-                            <div class="subscription-info">
-                                <p><strong>Mevcut Plan:</strong> Deneme</p>
-                                <p><strong>Kalan Süre:</strong> 7 gün</p>
-                                <button class="upgrade-btn" onclick="showSection('pricing')">Premium'a Yükselt</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="danger-zone">
-                        <h3>⚠️ Tehlikeli Bölge</h3>
-                        <p class="danger-description">Bu alandaki işlemler hesabınızı kalıcı olarak etkileyebilir.</p>
-                        <div class="danger-actions">
-                            <button class="danger-btn" onclick="confirmLogout()">Çıkış Yap</button>
-                            <button class="danger-btn" onclick="confirmDeleteAccount()">Hesabı Sil</button>
-                        </div>
+                <div class="feature-card featured">
+                    <div class="feature-badge">🔥 En Popüler</div>
+                    <div class="feature-icon">📝</div>
+                    <h3>Akıllı Dilekçe Oluşturucu</h3>
+                    <p>20+ dilekçe türünü AI ile otomatik oluşturun. Sistem, girdiğiniz bilgilere göre hukuki dile
+                        uygun, kanun referanslı profesyonel dilekçeler hazırlar.</p>
+                    <ul class="feature-list">
+                        <li><svg class="icon-check" viewBox="0 0 24 24">
+                                <path d="M20 6L9 17l-5-5"></path>
+                            </svg> İş davası dilekçeleri</li>
+                        <li><svg class="icon-check" viewBox="0 0 24 24">
+                                <path d="M20 6L9 17l-5-5"></path>
+                            </svg> Boşanma ve nafaka talepleri</li>
+                        <li><svg class="icon-check" viewBox="0 0 24 24">
+                                <path d="M20 6L9 17l-5-5"></path>
+                            </svg> İcra ve iflas başvuruları</li>
+                        <li><svg class="icon-check" viewBox="0 0 24 24">
+                                <path d="M20 6L9 17l-5-5"></path>
+                            </svg> Tüketici şikayetleri</li>
+                        <li><svg class="icon-check" viewBox="0 0 24 24">
+                                <path d="M20 6L9 17l-5-5"></path>
+                            </svg> İdari başvuru dilekçeleri</li>
+                        <li><svg class="icon-check" viewBox="0 0 24 24">
+                                <path d="M20 6L9 17l-5-5"></path>
+                            </svg> Ceza şikayetnameleri</li>
+                    </ul>
+                    <div class="feature-stats">
+                        <span>📄 PDF indirme</span>
+                        <span>🔄 UYAP uyumlu</span>
                     </div>
                 </div>
-            </section>
-        </main>
+
+                <div class="feature-card">
+                    <div class="feature-icon">📋</div>
+                    <h3>Sözleşme Risk Analizi</h3>
+                    <p>Sözleşmelerinizi yükleyin, AI riskli maddeleri, eksik hükümleri ve iyileştirme önerilerini
+                        detaylı raporlar. Borçlar Kanunu ve tüketici mevzuatına göre değerlendirme yapar.</p>
+                    <ul class="feature-list">
+                        <li><svg class="icon-check" viewBox="0 0 24 24">
+                                <path d="M20 6L9 17l-5-5"></path>
+                            </svg> PDF, DOCX, TXT desteği</li>
+                        <li><svg class="icon-check" viewBox="0 0 24 24">
+                                <path d="M20 6L9 17l-5-5"></path>
+                            </svg> Riskli madde tespiti</li>
+                        <li><svg class="icon-check" viewBox="0 0 24 24">
+                                <path d="M20 6L9 17l-5-5"></path>
+                            </svg> Eksik hüküm uyarıları</li>
+                        <li><svg class="icon-check" viewBox="0 0 24 24">
+                                <path d="M20 6L9 17l-5-5"></path>
+                            </svg> Madde bazlı öneri listesi</li>
+                        <li><svg class="icon-check" viewBox="0 0 24 24">
+                                <path d="M20 6L9 17l-5-5"></path>
+                            </svg> Detaylı analiz raporu</li>
+                    </ul>
+                    <div class="feature-stats">
+                        <span>🔍 30+ sayfa analiz kapasitesi</span>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">⚖️</div>
+                    <h3>Emsal Karar Arama</h3>
+                    <p>Yargıtay, Danıştay, Anayasa Mahkemesi ve Rekabet Kurumu kararlarını tek platformda arayın. AI,
+                        davanıza en uygun emsal kararları özetleriyle sunar.</p>
+                    <ul class="feature-list">
+                        <li><svg class="icon-check" viewBox="0 0 24 24">
+                                <path d="M20 6L9 17l-5-5"></path>
+                            </svg> Yargıtay Hukuk/Ceza Daireleri</li>
+                        <li><svg class="icon-check" viewBox="0 0 24 24">
+                                <path d="M20 6L9 17l-5-5"></path>
+                            </svg> Danıştay İdari Dava Daireleri</li>
+                        <li><svg class="icon-check" viewBox="0 0 24 24">
+                                <path d="M20 6L9 17l-5-5"></path>
+                            </svg> AYM bireysel başvuru kararları</li>
+                        <li><svg class="icon-check" viewBox="0 0 24 24">
+                                <path d="M20 6L9 17l-5-5"></path>
+                            </svg> Rekabet Kurulu kararları</li>
+                        <li><svg class="icon-check" viewBox="0 0 24 24">
+                                <path d="M20 6L9 17l-5-5"></path>
+                            </svg> AI destekli karar özetleri</li>
+                    </ul>
+                    <div class="feature-stats">
+                        <span>📚 100.000+ emsal karar</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Features Banner -->
+            <div class="features-banner">
+                <div class="banner-item">
+                    <span class="banner-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
+                    </span>
+                    <div>
+                        <strong>Güvenli Altyapı</strong>
+                        <p>256-bit SSL şifreleme, KVKK uyumlu</p>
+                    </div>
+                </div>
+                <div class="banner-item">
+                    <span class="banner-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path
+                                d="M21 12a9 9 0 0 1-9 9m9-9a9 9 0 0 0-9-9m9 9H3m9 9a9 9 0 0 1-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9">
+                            </path>
+                        </svg>
+                    </span>
+                    <div>
+                        <strong>Sürekli Güncelleme</strong>
+                        <p>Mevzuat değişiklikleri anında yansır</p>
+                    </div>
+                </div>
+                <div class="banner-item">
+                    <span class="banner-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                    </span>
+                    <div>
+                        <strong>Bulut Kayıt</strong>
+                        <p>Tüm işlemleriniz otomatik kaydedilir</p>
+                    </div>
+                </div>
+                <div class="banner-item">
+                    <span class="banner-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                            <line x1="12" y1="18" x2="12.01" y2="18"></line>
+                        </svg>
+                    </span>
+                    <div>
+                        <strong>Mobil Uyumlu</strong>
+                        <p>Her cihazdan erişim imkanı</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="how-it-works" id="how-it-works">
+        <div class="container">
+            <div class="section-header">
+                <h2>Nasıl Çalışır?</h2>
+                <p>3 basit adımda hukuki desteğe ulaşın</p>
+            </div>
+
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <h3>Ücretsiz Kayıt Olun</h3>
+                    <p>E-posta adresinizle hızlıca hesap oluşturun</p>
+                </div>
+                <div class="step-line"></div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <h3>Sorunuzu Sorun</h3>
+                    <p>Hukuki konunuzu AI asistana açıklayın</p>
+                </div>
+                <div class="step-line"></div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <h3>Yanıtı Alın</h3>
+                    <p>Detaylı ve kaynaklı yanıtınızı anında görün</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="pricing" id="pricing">
+        <div class="container">
+            <div class="section-header">
+                <h2>Fiyatlandırma</h2>
+                <p>İhtiyacınıza uygun planı seçin</p>
+            </div>
+
+            <div class="pricing-grid">
+                <div class="pricing-card">
+                    <div class="pricing-header">
+                        <h3>Deneme Paketi</h3>
+                        <div class="price">Ücretsiz</div>
+                        <p>Platformu keşfetmeniz için 7 gün boyunca tüm özelliklere erişim.</p>
+                    </div>
+                    <ul class="pricing-features">
+                        <li>
+                            <svg class="icon-check" viewBox="0 0 24 24">
+                                <path d="M20 6L9 17l-5-5"></path>
+                            </svg>
+                            <span>5 AI Soru Hakkı</span>
+                            <div class="tooltip-container">
+                                <span class="info-icon">i</span>
+                                <span class="tooltip-text">Günde 5 adet hukuki soru sorabilir ve yapay zeka tarafından
+                                    yanıtlanmasını sağlayabilirsiniz.</span>
+                            </div>
+                        </li>
+                        <li>
+                            <svg class="icon-check" viewBox="0 0 24 24">
+                                <path d="M20 6L9 17l-5-5"></path>
+                            </svg>
+                            <span>1 Dilekçe Taslağı</span>
+                            <div class="tooltip-container">
+                                <span class="info-icon">i</span>
+                                <span class="tooltip-text">Standart şablonlardan birini kullanarak dilekçe taslağı
+                                    oluşturabilirsiniz.</span>
+                            </div>
+                        </li>
+                        <li><svg class="icon-check" viewBox="0 0 24 24">
+                                <path d="M20 6L9 17l-5-5"></path>
+                            </svg> 2 Sözleşme Analizi</li>
+                        <li><svg class="icon-check" viewBox="0 0 24 24">
+                                <path d="M20 6L9 17l-5-5"></path>
+                            </svg> Emsal Karar Arama</li>
+                    </ul>
+                    <button class="btn btn-outline" onclick="showModal('register')">Ücretsiz Başla</button>
+                </div>
+
+                <div class="pricing-card popular">
+                    <div class="popular-badge">En Çok Tercih Edilen</div>
+                    <div class="pricing-header">
+                        <h3>Profesyonel</h3>
+                        <div class="price">₺1.200<span>/ay</span></div>
+                        <p>Avukatlar ve yoğun çalışan hukuk danışmanları için ideal çözüm.</p>
+                    </div>
+                    <ul class="pricing-features">
+                        <li>
+                            <svg class="icon-check" viewBox="0 0 24 24">
+                                <path d="M20 6L9 17l-5-5"></path>
+                            </svg>
+                            <span>Sınırsız AI Soru & Yanıt</span>
+                            <div class="tooltip-container">
+                                <span class="info-icon">i</span>
+                                <span class="tooltip-text">7/24 dilediğiniz kadar soru sorun, anında detaylı hukuki
+                                    yanıtlar alın.</span>
+                            </div>
+                        </li>
+                        <li>
+                            <svg class="icon-check" viewBox="0 0 24 24">
+                                <path d="M20 6L9 17l-5-5"></path>
+                            </svg>
+                            <span>Ayda 20 Gelişmiş Dilekçe</span>
+                            <div class="tooltip-container">
+                                <span class="info-icon">i</span>
+                                <span class="tooltip-text">Kişiselleştirilmiş, detaylı ve hukuki terimlere uygun dilekçe
+                                    oluşturma.</span>
+                            </div>
+                        </li>
+                        <li><svg class="icon-check" viewBox="0 0 24 24">
+                                <path d="M20 6L9 17l-5-5"></path>
+                            </svg> 10 Sözleşme Analizi/Ay</li>
+                        <li><svg class="icon-check" viewBox="0 0 24 24">
+                                <path d="M20 6L9 17l-5-5"></path>
+                            </svg> Sınırsız Emsal Karar Arama</li>
+                        <li><svg class="icon-check" viewBox="0 0 24 24">
+                                <path d="M20 6L9 17l-5-5"></path>
+                            </svg> Öncelikli E-posta Destek</li>
+                    </ul>
+                    <button class="btn btn-primary btn-shine" onclick="showModal('register')">Hemen Başla</button>
+                </div>
+
+                <div class="pricing-card">
+                    <div class="pricing-header">
+                        <h3>Kurumsal & Büro</h3>
+                        <div class="price">₺2.000<span>/ay</span></div>
+                        <p>Hukuk büroları ve geniş ekipler için ölçeklenebilir yapı.</p>
+                    </div>
+                    <ul class="pricing-features">
+                        <li><svg class="icon-check" viewBox="0 0 24 24">
+                                <path d="M20 6L9 17l-5-5"></path>
+                            </svg> Tüm Profesyonel özellikler</li>
+                        <li><svg class="icon-check" viewBox="0 0 24 24">
+                                <path d="M20 6L9 17l-5-5"></path>
+                            </svg> Sınırsız Dilekçe Oluşturma</li>
+                        <li><svg class="icon-check" viewBox="0 0 24 24">
+                                <path d="M20 6L9 17l-5-5"></path>
+                            </svg> Sınırsız Sözleşme Analizi</li>
+                        <li>
+                            <svg class="icon-check" viewBox="0 0 24 24">
+                                <path d="M20 6L9 17l-5-5"></path>
+                            </svg>
+                            <span>API Erişimi</span>
+                            <div class="tooltip-container">
+                                <span class="info-icon">i</span>
+                                <span class="tooltip-text">Kendi sistemlerinize JustLaw yapay zeka altyapısını entegre
+                                    edin.</span>
+                            </div>
+                        </li>
+                        <li><svg class="icon-check" viewBox="0 0 24 24">
+                                <path d="M20 6L9 17l-5-5"></path>
+                            </svg> 3 Kullanıcı Lisansı</li>
+                        <li><svg class="icon-check" viewBox="0 0 24 24">
+                                <path d="M20 6L9 17l-5-5"></path>
+                            </svg> 7/24 Canlı Destek</li>
+                    </ul>
+                    <button class="btn btn-outline" onclick="showModal('register')">Satış Ekibiyle Görüş</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Upcoming Features Section -->
+    <section class="upcoming-features" id="roadmap">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-badge">🚀 Yol Haritası</span>
+                <h2>Yakında Eklenecek Özellikler</h2>
+                <p>Sürekli gelişen platformumuzda yakında sizlerle buluşacak yenilikler</p>
+            </div>
+
+            <div class="roadmap-grid">
+                <div class="roadmap-card coming-soon">
+                    <div class="roadmap-status">🔜 Yakında</div>
+                    <div class="roadmap-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                            <line x1="12" y1="18" x2="12.01" y2="18"></line>
+                        </svg>
+                    </div>
+                    <h3>Mobil Uygulama</h3>
+                    <p>iOS ve Android için native mobil uygulama. Hareket halindeyken bile hukuki desteğe anında erişin.
+                    </p>
+                    <div class="roadmap-eta">Hedef: Q1 2026</div>
+                </div>
+
+                <div class="roadmap-card coming-soon">
+                    <div class="roadmap-status">🔜 Yakında</div>
+                    <div class="roadmap-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                        </svg>
+                    </div>
+                    <h3>UYAP Entegrasyonu</h3>
+                    <p>Doğrudan UYAP sistemine bağlanarak dava takibi, duruşma tarihleri ve dosya bilgilerine erişim.
+                    </p>
+                    <div class="roadmap-eta">Hedef: Q1 2026</div>
+                </div>
+
+                <div class="roadmap-card in-development">
+                    <div class="roadmap-status">⚙️ Geliştiriliyor</div>
+                    <div class="roadmap-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                            <line x1="12" y1="19" x2="12" y2="23"></line>
+                            <line x1="8" y1="23" x2="16" y2="23"></line>
+                        </svg>
+                    </div>
+                    <h3>Sesli Asistan</h3>
+                    <p>Konuşarak soru sorun, sesli yanıt alın. Hands-free hukuki danışmanlık deneyimi.</p>
+                    <div class="roadmap-eta">Hedef: Q2 2026</div>
+                </div>
+
+                <div class="roadmap-card planned">
+                    <div class="roadmap-status">📋 Planlanıyor</div>
+                    <div class="roadmap-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                    </div>
+                    <h3>Avukat Eşleştirme</h3>
+                    <p>Dava türünüze göre uzman avukatlarla eşleşin. Randevu alın, online görüşme yapın.</p>
+                    <div class="roadmap-eta">Hedef: Q2 2026</div>
+                </div>
+
+                <div class="roadmap-card planned">
+                    <div class="roadmap-status">📋 Planlanıyor</div>
+                    <div class="roadmap-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                            <polyline points="17 6 23 6 23 12"></polyline>
+                        </svg>
+                    </div>
+                    <h3>Dava Sonucu Tahmini</h3>
+                    <p>AI ile geçmiş emsal kararlara dayanarak davanızın olası sonucunu tahmin edin.</p>
+                    <div class="roadmap-eta">Hedef: Q3 2026</div>
+                </div>
+
+                <div class="roadmap-card planned">
+                    <div class="roadmap-status">📋 Planlanıyor</div>
+                    <div class="roadmap-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                        </svg>
+                    </div>
+                    <h3>Hukuk Eğitim Platformu</h3>
+                    <p>Video dersler, interaktif quizler ve sertifika programlarıyla hukuk bilginizi geliştirin.</p>
+                    <div class="roadmap-eta">Hedef: Q3 2026</div>
+                </div>
+            </div>
+
+            <div class="roadmap-cta">
+                <p>💡 Öneri ve istekleriniz için bize ulaşın</p>
+                <a href="mailto:info.dikatech@gmail.com" class="btn btn-outline">Öneride Bulunun</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="faq-section" id="faq">
+        <div class="container">
+            <div class="section-header">
+                <h2>Sıkça Sorulan Sorular</h2>
+                <p>Hukuki asistanınız hakkında merak edilenler</p>
+            </div>
+            <div class="faq-grid">
+                <div class="faq-item">
+                    <h3>JustLaw avukat yerine geçer mi?</h3>
+                    <p>Hayır, JustLaw bir yapay zeka asistanıdır ve hukuki bilgilendirme amacı taşır. Kesin hukuki yargı
+                        ve temsil için bir avukata danışmanız önerilir.</p>
+                </div>
+                <div class="faq-item">
+                    <h3>Verilerim güvende mi?</h3>
+                    <p>Evet, verileriniz 256-bit SSL ile şifrelenir ve KVKK standartlarına uygun olarak korunur.
+                        Gizliliğiniz bizim için en önemli önceliktir.</p>
+                </div>
+                <div class="faq-item">
+                    <h3>Hangi alanlarda destek alabilirim?</h3>
+                    <p>İş hukuku, aile hukuku, icra iflas, tüketici hakları gibi Türk hukukunun temel alanlarında soru
+                        sorabilir ve dilekçe taslakları oluşturabilirsiniz.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="container">
+            <h2>Hukuki Desteğe Hemen Başlayın</h2>
+            <p>7 gün ücretsiz deneme ile tüm özelliklere erişim</p>
+            <button class="btn btn-primary btn-lg" onclick="showModal('register')">
+                Ücretsiz Başla
+                <span class="btn-arrow">→</span>
+            </button>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <div class="logo">
+                        <img src="images/logo.svg" alt="JustLaw AI Logo" class="logo-img">
+                        <span class="logo-text">JustLaw</span>
+                    </div>
+                    <p>Türk Hukuku AI Asistanı. Hukuki bilgiye erişimi demokratikleştiriyoruz.</p>
+                </div>
+
+                <div class="footer-links">
+                    <h4>Ürün</h4>
+                    <a href="#features">Özellikler</a>
+                    <a href="#pricing">Fiyatlandırma</a>
+                    <a href="#">API</a>
+                </div>
+
+                <div class="footer-links">
+                    <h4>Şirket</h4>
+                    <a href="#">Hakkımızda</a>
+                    <a href="#">Blog</a>
+                    <a href="mailto:info.dikatech@gmail.com">İletişim</a>
+                </div>
+
+                <div class="footer-links">
+                    <h4>Yasal</h4>
+                    <a href="privacy.html">Gizlilik Politikası</a>
+                    <a href="#">Kullanım Koşulları</a>
+                    <a href="#">KVKK Metni</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 JustLaw. Tüm hakları saklıdır.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Modals -->
+
+    <!-- Login Modal -->
+    <div class="modal" id="login-modal">
+        <div class="modal-overlay" onclick="closeModal('login')"></div>
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal('login')">&times;</button>
+            <div class="modal-header">
+                <h2>Giriş Yap</h2>
+                <p>Hesabınıza eriş ve asistanına danışmaya başla</p>
+            </div>
+            <form class="auth-form" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label>E-posta</label>
+                    <input type="email" id="login-email" required>
+                </div>
+                <div class="form-group">
+                    <label>Şifre</label>
+                    <input type="password" id="login-password" required>
+                    <a href="#" class="forgot-password" onclick="handleForgotPassword(event)">Şifremi unuttum</a>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full" id="login-btn">Giriş Yap</button>
+
+                <!-- Divider, Google Login -->
+                <div
+                    style="display: flex; align-items: center; margin: 20px 0; color: var(--text-tertiary); font-size: 0.9rem;">
+                    <hr style="flex: 1; border: none; height: 1px; background: var(--border);">
+                    <span style="padding: 0 10px;">veya</span>
+                    <hr style="flex: 1; border: none; height: 1px; background: var(--border);">
+                </div>
+
+                <button type="button" class="btn btn-outline btn-full google-btn" onclick="handleGoogleLogin()">
+                    <svg width="20" height="20" viewBox="0 0 24 24">
+                        <path fill="#4285F4"
+                            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                        <path fill="#34A853"
+                            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                        <path fill="#FBBC05"
+                            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.24.81-.6z" />
+                        <path fill="#EA4335"
+                            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                    </svg>
+                    Google ile Giriş Yap
+                </button>
+            </form>
+            <div id="login-error" class="auth-error" style="display:none;"></div>
+            <div class="modal-footer">
+                <p>Hesabınız yok mu? <a href="#" onclick="switchModal('register')">Kayıt Olun</a></p>
+            </div>
+        </div>
     </div>
 
-    <!-- Scripts -->
-    <script src="js/app.js"></script>
+    <!-- Register Modal -->
+    <div class="modal" id="register-modal">
+        <div class="modal-overlay" onclick="closeModal('register')"></div>
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal('register')">&times;</button>
+            <div class="modal-header">
+                <h2>Ücretsiz Kayıt Ol</h2>
+                <p>7 günlük deneme sürümünü hemen başlat</p>
+            </div>
+            <form class="auth-form" onsubmit="handleRegister(event)">
+                <div class="form-group">
+                    <label>Ad Soyad</label>
+                    <input type="text" id="register-name" required>
+                </div>
+                <div class="form-group">
+                    <label>E-posta</label>
+                    <input type="email" id="register-email" required>
+                </div>
+                <div class="form-group">
+                    <label>Şifre</label>
+                    <input type="password" id="register-password" required minlength="8">
+                </div>
+                <div class="checkbox">
+                    <input type="checkbox" id="register-terms" required>
+                    <label for="register-terms"><a href="#">Kullanım koşullarını</a> ve <a href="privacy.html">gizlilik
+                            politikasını</a> kabul ediyorum</label>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full" id="register-btn">Ücretsiz Başla</button>
+
+                <!-- Divider, Google Register -->
+                <div
+                    style="display: flex; align-items: center; margin: 20px 0; color: var(--text-tertiary); font-size: 0.9rem;">
+                    <hr style="flex: 1; border: none; height: 1px; background: var(--border);">
+                    <span style="padding: 0 10px;">veya</span>
+                    <hr style="flex: 1; border: none; height: 1px; background: var(--border);">
+                </div>
+
+                <button type="button" class="btn btn-outline btn-full google-btn" onclick="handleGoogleLogin()">
+                    <svg width="20" height="20" viewBox="0 0 24 24">
+                        <path fill="#4285F4"
+                            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                        <path fill="#34A853"
+                            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                        <path fill="#FBBC05"
+                            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.24.81-.6z" />
+                        <path fill="#EA4335"
+                            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                    </svg>
+                    Google ile Kayıt Ol
+                </button>
+            </form>
+            <div id="register-error" class="auth-error" style="display:none;"></div>
+            <div class="modal-footer">
+                <p>Zaten hesabınız var mı? <a href="#" onclick="switchModal('login')">Giriş yapın</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Verification Pending Modal -->
+    <div class="modal" id="verification-modal" data-backdrop="static">
+        <div class="modal-overlay"></div>
+        <div class="modal-content verification-modal-content">
+            <div class="modal-header" style="border: none; padding-bottom: 0;">
+                <div class="verification-icon">📩</div>
+                <h2 style="font-size: 1.8rem; margin-bottom: 8px;">Son Bir Adım Kaldı!</h2>
+                <p style="color: var(--text-secondary);">Hesabınız oluşturuldu, şimdi aktifleştirelim.</p>
+            </div>
+
+            <div class="modal-body" style="padding: 24px;">
+                <div class="verification-email-box">
+                    <p style="color: var(--text-primary); font-size: 1.1rem; margin-bottom: 4px;">
+                        <strong id="verification-email-display" style="color: var(--primary);"></strong>
+                    </p>
+                    <p style="font-size: 0.9rem; margin: 0; opacity: 0.8;">adresine doğrulama bağlantısı gönderdik.</p>
+                </div>
+
+                <div class="verification-steps">
+                    <div class="verification-step">
+                        <span class="step-number">1</span>
+                        <span class="step-text">E-posta kutunuzu (ve Spam klasörünü) kontrol edin.</span>
+                    </div>
+                    <div class="verification-step">
+                        <span class="step-number">2</span>
+                        <span class="step-text">Gelen bağlantıya tıklayın.</span>
+                    </div>
+                    <div class="verification-step">
+                        <span class="step-number">3</span>
+                        <span class="step-text">Buraya dönüp aşağıdaki butona basın.</span>
+                    </div>
+                </div>
+
+
+                <div class="verification-status" id="verification-status"
+                    style="margin-bottom: 20px; display: none; padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.05);">
+                </div>
+
+                <button class="btn btn-primary btn-full btn-lg" onclick="checkVerificationStatus()"
+                    id="check-verification-btn" style="height: 50px; font-size: 1.1rem;">
+                    ✅ Doğruladım, Giriş Yap
+                </button>
+
+                <div style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 16px;">
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">E-posta gelmedi mi?
+                    </p>
+                    <button class="btn btn-ghost btn-sm" onclick="resendVerificationEmail()" id="resend-btn"
+                        style="color: var(--primary);">Tekrar Gönder</button>
+                    <span style="color: var(--text-border); margin: 0 8px;">|</span>
+                    <button class="btn btn-ghost btn-sm" onclick="cancelVerification()"
+                        style="color: var(--text-secondary);">Çıkış Yap / Vazgeç</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PWA Install Modal -->
+    <div class="install-modal" id="install-modal">
+        <div class="install-content">
+            <div class="install-icon">📲</div>
+            <h3 class="install-title">JustLaw'ı Yükle</h3>
+            <p class="install-text">Daha hızlı erişim ve tam ekran deneyimi için ana ekranına ekle.</p>
+
+            <div class="install-steps" id="ios-steps">
+                <div class="install-step">
+                    <div class="step-icon">1</div>
+                    <span>Tarayıcı menüsünü aç (Paylaş butonu)</span>
+                </div>
+                <div class="install-step">
+                    <div class="step-icon">2</div>
+                    <span>"Ana Ekrana Ekle" seçeneğini bul</span>
+                </div>
+                <div class="install-step">
+                    <div class="step-icon">3</div>
+                    <span>"Ekle" butonuna bas</span>
+                </div>
+            </div>
+
+            <button class="btn btn-primary btn-full" onclick="closeInstallModal()">Anladım</button>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script type="module" src="js/auth.js"></script>
+    <script type="module" src="js/payment.js"></script>
+    <script src="js/landing.js"></script>
 </body>
 
 </html>

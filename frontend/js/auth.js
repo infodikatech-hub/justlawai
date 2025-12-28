@@ -12,13 +12,16 @@ import {
     onAuthStateChanged,
     GoogleAuthProvider,
     signInWithPopup,
-    updateProfile
+    updateProfile,
+    deleteUser,
+    sendEmailVerification
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import {
     doc,
     setDoc,
     getDoc,
     updateDoc,
+    deleteDoc,
     serverTimestamp,
     Timestamp
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
@@ -36,20 +39,68 @@ const googleProvider = new GoogleAuthProvider();
  */
 export async function registerUser(email, password, name) {
     try {
-        // Firebase Auth ile kullanıcı oluştur
+        // 1. Firebase Auth ile kullanıcı oluştur (Sadece Auth)
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        // Profil güncelle
-        await updateProfile(user, { displayName: name });
+        // 2. Profil güncelle
+        try {
+            await updateProfile(user, { displayName: name });
+        } catch (e) {
+            console.warn('[Auth] Profile update failed:', e);
+        }
 
-        // Firestore'a kullanıcı belgesi oluştur
+        // 3. E-posta doğrulama gönder
+        try {
+            await sendEmailVerification(user);
+            console.log('[Auth] Verification email sent');
+        } catch (emailError) {
+            console.error('[Auth] Email Verification Error:', emailError);
+            throw emailError;
+        }
+
+        console.log('[Auth] User auth created (Pending Verification):', user.uid);
+        // requiresVerification: true -> Landing.js bunu görüp modal açacak
+        return { success: true, user, requiresVerification: true };
+
+    } catch (error) {
+        console.error('[Auth] Registration error:', error);
+        return { success: false, error: getErrorMessage(error.code) };
+    }
+}
+
+/**
+ * E-posta doğrulandıktan sonra Deneme Hesabını Başlat
+ * (Firestore kaydını YENİ oluşturur, böylece 7 gün şimdi başlar)
+ */
+export async function activateTrialAccount() {
+    const user = auth.currentUser;
+    if (!user) return { success: false, error: 'Oturum bulunamadı.' };
+
+    try {
+        // Kullanıcıyı yenile (Doğrulama durumunu güncellemek için)
+        await user.reload();
+
+        if (!user.emailVerified) {
+            return { success: false, error: 'E-posta henüz doğrulanmamış.' };
+        }
+
+        // Firestore kontrolü (Zaten var mı?)
+        const docRef = doc(db, 'users', user.uid);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            console.log('[Auth] Account already active');
+            return { success: true, user };
+        }
+
+        // Hesabı ŞİMDİ başlat (Trial Start = Now)
         const now = new Date();
-        const trialEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 gün sonra
+        const trialEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 gün
 
-        await setDoc(doc(db, 'users', user.uid), {
-            email: email,
-            name: name,
+        await setDoc(docRef, {
+            email: user.email,
+            name: user.displayName || 'Kullanıcı',
             createdAt: serverTimestamp(),
             plan: 'trial',
             trialStartDate: Timestamp.fromDate(now),
@@ -64,12 +115,23 @@ export async function registerUser(email, password, name) {
             }
         });
 
-        console.log('[Auth] User registered:', user.uid);
+        console.log('[Auth] Trial activated for:', user.uid);
         return { success: true, user };
+
     } catch (error) {
-        console.error('[Auth] Registration error:', error);
-        return { success: false, error: getErrorMessage(error.code) };
+        console.error('[Auth] Activation error:', error);
+        return { success: false, error: getErrorMessage(error.code) || error.message };
     }
+}
+
+/**
+ * E-posta doğrulama durumunu kontrol et
+ */
+export async function checkEmailVerification() {
+    const user = auth.currentUser;
+    if (!user) return false;
+    await user.reload();
+    return user.emailVerified;
 }
 
 // ============== USER LOGIN ==============
@@ -80,6 +142,13 @@ export async function registerUser(email, password, name) {
 export async function loginUser(email, password) {
     try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
+
+        // E-posta doğrulama kontrolü
+        if (!userCredential.user.emailVerified) {
+            await signOut(auth);
+            return { success: false, error: 'Lütfen giriş yapmadan önce e-posta adresinizi doğrulayın.' };
+        }
+
         console.log('[Auth] User logged in:', userCredential.user.uid);
         return { success: true, user: userCredential.user };
     } catch (error) {
@@ -144,6 +213,36 @@ export async function logoutUser() {
     }
 }
 
+// ============== ACCOUNT DELETION ==============
+
+/**
+ * Hesabı Sil
+ */
+export async function deleteAccount() {
+    const user = auth.currentUser;
+    if (!user) return { success: false, error: 'Kullanıcı oturumu açık değil.' };
+
+    try {
+        // 1. Firestore verisini sil
+        await deleteDoc(doc(db, 'users', user.uid));
+
+        // 2. Auth kullanıcısını sil
+        await deleteUser(user);
+
+        console.log('[Auth] Account deleted');
+        return { success: true };
+    } catch (error) {
+        console.error('[Auth] Delete account error:', error);
+        if (error.code === 'auth/requires-recent-login') {
+            return { success: false, error: 'Hesap silmek için lütfen çıkış yapıp tekrar giriş yapın.' };
+        }
+        return { success: false, error: getErrorMessage(error.code) };
+    }
+}
+
+// Expose to window for app.js access
+window.deleteAccount = deleteAccount;
+
 // ============== PASSWORD RESET ==============
 
 /**
@@ -192,6 +291,23 @@ export async function getUserData(userId) {
     }
 }
 
+
+/**
+ * Doğrulama e-postasını tekrar gönder
+ */
+export async function resendVerification() {
+    const user = auth.currentUser;
+    if (!user) return { success: false, error: 'Kullanıcı bulunamadı.' };
+
+    try {
+        await sendEmailVerification(user);
+        return { success: true };
+    } catch (error) {
+        console.error('[Auth] Resend error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
 // ============== ERROR MESSAGES ==============
 
 function getErrorMessage(errorCode) {
@@ -211,5 +327,10 @@ function getErrorMessage(errorCode) {
     return messages[errorCode] || 'Bir hata oluştu. Lütfen tekrar deneyin.';
 }
 
-// Export auth object for direct access if needed
+
+// Export auth object and helpers
 export { auth };
+
+// Expose internal helpers for advanced usage if needed
+window.checkEmailVerification = checkEmailVerification;
+window.activateTrialAccount = activateTrialAccount;

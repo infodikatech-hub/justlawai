@@ -759,107 +759,77 @@ class ShopierPayment:
 @app.post("/api/payment/create")
 async def create_payment(request: dict):
     """
-    Shopier ödeme linki oluşturur.
+    Shopier ödeme linki oluşturur (DÜZELTİLMİŞ VERSİYON).
     """
     import uuid
-    import os
-    
+    import hmac
+    import hashlib
+    import base64
+    import random
+
     user_id = request.get("user_id")
     plan_type = request.get("plan_type", "professional")
     
     if not user_id:
-        raise HTTPException(status_code=400, detail="Kullanıcı ID gerekli")
+        return {"error": "Kullanıcı ID gerekli"}
         
     prices = {
         "professional": 999,
         "enterprise": 1500
     }
     
-    
-    
-    # Calculate Order ID
+    # 1. Temel Veriler
     order_id = f"ORDER-{uuid.uuid4().hex[:8].upper()}"
+    amount = prices.get(plan_type, 999)
+    # Shopier nokta ile ayrılmış string ister (Örn: "999.00")
+    total_order_value = f"{float(amount):.2f}" 
+    currency = "0" # 0=TL
     
-    # Shopier API Configuration (Hardcoded as requested)
+    # API Bilgileri (Hardcoded)
     api_key = "b88f043894c4bb8d023565fa24fc5829"
     api_secret = "93f8a73b9a0cbf1e7b0a001e1702a992"
-    
-    # Calculate Amount (Must be formatted to 2 decimals for the signature)
-    amount = prices.get(plan_type, 999)
-    formatted_amount = f"{float(amount):.2f}" # "999.00"
-    
-    # Random Number
-    import random
+
+    # Rastgele numara
     random_nr = str(random.randint(100000, 999999))
     
-    # --- OFFICIAL LONG HASH PATTERN (CRITICAL ORDER) ---
-    # random_nr + platform_order_id + total_order_value + currency + product_type + 
-    # buyer_name + buyer_surname + buyer_email + account_number + phone + 
-    # billing_address + city + country + zip_code
+    # 2. İMZA OLUŞTURMA (En Kritik Yer)
+    data_to_sign = f"{random_nr}{order_id}{total_order_value}{currency}"
     
-    buyer_name = "Mustafa"
-    buyer_surname = "Kullanici"
-    buyer_email = "user@justlaw.com"
-    buyer_phone = "5551112233"
-    billing_address = "Istiklal Cad. No:1"
-    city = "Istanbul"
-    country = "Turkey"
-    zip_code = "34000"
-    product_type = "0" # Digital
-    currency = "0" # TL
+    print(f"DEBUG: İmzalanan Veri: {data_to_sign}")
     
-    # --- OFFICIAL LONG HASH PATTERN (CRITICAL ORDER for api_pay4.php) ---
-    # concatenated in this order: random_nr . order_id . amount . currency . product_type . 
-    # buyer_name . buyer_surname . buyer_email . account_number . phone . 
-    # billing_address . city . country . zip_code
+    signature = hmac.new(
+        key=api_secret.encode('utf-8'),
+        msg=data_to_sign.encode('utf-8'),
+        digestmod=hashlib.sha256
+    ).digest()
     
-    data_to_sign = (f"{random_nr}{order_id}{formatted_amount}{currency}{product_type}"
-                    f"{buyer_name}{buyer_surname}{buyer_email}{user_id}{buyer_phone}"
-                    f"{billing_address}{city}{country}{zip_code}")
-    
-    # Debug: Log the signature components (without the secret)
-    print(f"DEBUG: Shopier Signature String: {data_to_sign}")
-    
-    import hmac
-    import hashlib
-    import base64
-    
-    signature = base64.b64encode(hmac.new(api_secret.encode('utf-8'), 
-                                         data_to_sign.encode('utf-8'), 
-                                         hashlib.sha256).digest()).decode('utf-8')
-    
+    signature_b64 = base64.b64encode(signature).decode('utf-8')
+
+    # 3. HTML Form Oluşturma
     shopier_form = f"""
     <!DOCTYPE html>
     <html>
-    <head><title>Ödeme Sayfasına Yönlendiriliyorsunuz...</title></head>
+    <head><title>Güvenli Ödeme</title></head>
     <body onload="document.getElementById('shopier_form').submit()">
-        <div style="text-align:center; padding:50px; font-family:sans-serif;">
-            <h3>Güvenli Ödeme Sayfasına Yönlendiriliyorsunuz...</h3>
-            <p>Lütfen bekleyin, Shopier'e bağlanılıyor.</p>
-        </div>
         <form id="shopier_form" action="https://www.shopier.com/ShowProduct/api_pay4.php" method="post">
             <input type="hidden" name="API_key" value="{api_key}">
             <input type="hidden" name="website_index" value="1">
             <input type="hidden" name="platform_order_id" value="{order_id}">
-            <input type="hidden" name="product_name" value="JustLaw {plan_type.title()} Plan">
-            <input type="hidden" name="product_type" value="{product_type}">
-            <input type="hidden" name="buyer_name" value="{buyer_name}">
-            <input type="hidden" name="buyer_surname" value="{buyer_surname}">
-            <input type="hidden" name="buyer_email" value="{buyer_email}">
-            <input type="hidden" name="buyer_account_number" value="{user_id}">
-            <input type="hidden" name="buyer_phone" value="{buyer_phone}">
-            <input type="hidden" name="buyer_id_nr" value="11111111111">
-            <input type="hidden" name="buyer_account_age" value="0">
-            <input type="hidden" name="billing_address" value="{billing_address}">
-            <input type="hidden" name="city" value="{city}">
-            <input type="hidden" name="country" value="{country}">
-            <input type="hidden" name="zip_code" value="{zip_code}">
-            <input type="hidden" name="total_amount" value="{formatted_amount}">
+            <input type="hidden" name="product_name" value="JustLaw {plan_type} Plan">
+            <input type="hidden" name="product_type" value="0">
+            <input type="hidden" name="buyer_name_first" value="Mustafa">
+            <input type="hidden" name="buyer_name_last" value="Kullanici">
+            <input type="hidden" name="buyer_email" value="user@justlaw.com">
+            <input type="hidden" name="buyer_phone" value="05554443322">
+            
+            <input type="hidden" name="total_order_value" value="{total_order_value}">
             <input type="hidden" name="currency" value="{currency}">
+            
             <input type="hidden" name="random_nr" value="{random_nr}">
-            <input type="hidden" name="signature" value="{signature}">
+            <input type="hidden" name="signature" value="{signature_b64}">
+            <input type="hidden" name="modul_version" value="1.0.4">
+            
             <input type="hidden" name="return_url" value="https://justlaw.com.tr/app.html">
-            <input type="hidden" name="modul_version" value="1.0.9">
         </form>
     </body>
     </html>
@@ -867,8 +837,7 @@ async def create_payment(request: dict):
     
     return {
         "payment_html": shopier_form,
-        "order_id": order_id,
-        "mode": "html_content"
+        "order_id": order_id
     }
 
 

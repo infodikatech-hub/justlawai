@@ -765,8 +765,8 @@ async def create_payment(request: dict):
     
     # Kullanıcı tarafından sağlanan manuel Shopier ürün linkleri
     links = {
-        "professional": "https://www.shopier.com/justlawai/42631944",
-        "enterprise": "https://www.shopier.com/justlawai/42631931"
+        "professional": "https://www.shopier.com/justlawai/42631931",
+        "enterprise": "https://www.shopier.com/justlawai/42631944"
     }
     
     payment_url = links.get(plan_type, links["professional"])

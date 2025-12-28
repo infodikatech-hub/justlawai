@@ -19,8 +19,8 @@ export async function startPayment(planType) {
 
         // Manuel Shopier Linkleri
         const manualLinks = {
-            'professional': 'https://www.shopier.com/justlawai/42631944',
-            'enterprise': 'https://www.shopier.com/justlawai/42631931'
+            'professional': 'https://www.shopier.com/justlawai/42631931',
+            'enterprise': 'https://www.shopier.com/justlawai/42631944'
         };
 
         const targetUrl = manualLinks[planType];

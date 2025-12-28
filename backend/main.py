@@ -759,85 +759,21 @@ class ShopierPayment:
 @app.post("/api/payment/create")
 async def create_payment(request: dict):
     """
-    Shopier ödeme linki oluşturur (DÜZELTİLMİŞ VERSİYON).
+    Shopier ödeme linki oluşturur (Manuel Yönlendirme).
     """
-    import uuid
-    import hmac
-    import hashlib
-    import base64
-    import random
-
-    user_id = request.get("user_id")
     plan_type = request.get("plan_type", "professional")
     
-    if not user_id:
-        return {"error": "Kullanıcı ID gerekli"}
-        
-    prices = {
-        "professional": 999,
-        "enterprise": 1500
+    # Kullanıcı tarafından sağlanan manuel Shopier ürün linkleri
+    links = {
+        "professional": "https://www.shopier.com/justlawai/42631944",
+        "enterprise": "https://www.shopier.com/justlawai/42631931"
     }
     
-    # 1. Temel Veriler
-    order_id = f"ORDER-{uuid.uuid4().hex[:8].upper()}"
-    amount = prices.get(plan_type, 999)
-    # Shopier nokta ile ayrılmış string ister (Örn: "999.00")
-    total_order_value = f"{float(amount):.2f}" 
-    currency = "0" # 0=TL
-    
-    # API Bilgileri (Hardcoded)
-    api_key = "b88f043894c4bb8d023565fa24fc5829"
-    api_secret = "93f8a73b9a0cbf1e7b0a001e1702a992"
-
-    # Rastgele numara
-    random_nr = str(random.randint(100000, 999999))
-    
-    # 2. İMZA OLUŞTURMA (En Kritik Yer)
-    data_to_sign = f"{random_nr}{order_id}{total_order_value}{currency}"
-    
-    print(f"DEBUG: İmzalanan Veri: {data_to_sign}")
-    
-    signature = hmac.new(
-        key=api_secret.encode('utf-8'),
-        msg=data_to_sign.encode('utf-8'),
-        digestmod=hashlib.sha256
-    ).digest()
-    
-    signature_b64 = base64.b64encode(signature).decode('utf-8')
-
-    # 3. HTML Form Oluşturma
-    shopier_form = f"""
-    <!DOCTYPE html>
-    <html>
-    <head><title>Güvenli Ödeme</title></head>
-    <body onload="document.getElementById('shopier_form').submit()">
-        <form id="shopier_form" action="https://www.shopier.com/ShowProduct/api_pay4.php" method="post">
-            <input type="hidden" name="API_key" value="{api_key}">
-            <input type="hidden" name="website_index" value="1">
-            <input type="hidden" name="platform_order_id" value="{order_id}">
-            <input type="hidden" name="product_name" value="JustLaw {plan_type} Plan">
-            <input type="hidden" name="product_type" value="0">
-            <input type="hidden" name="buyer_name_first" value="Mustafa">
-            <input type="hidden" name="buyer_name_last" value="Kullanici">
-            <input type="hidden" name="buyer_email" value="user@justlaw.com">
-            <input type="hidden" name="buyer_phone" value="05554443322">
-            
-            <input type="hidden" name="total_order_value" value="{total_order_value}">
-            <input type="hidden" name="currency" value="{currency}">
-            
-            <input type="hidden" name="random_nr" value="{random_nr}">
-            <input type="hidden" name="signature" value="{signature_b64}">
-            <input type="hidden" name="modul_version" value="1.0.4">
-            
-            <input type="hidden" name="return_url" value="https://justlaw.com.tr/app.html">
-        </form>
-    </body>
-    </html>
-    """
+    payment_url = links.get(plan_type, links["professional"])
     
     return {
-        "payment_html": shopier_form,
-        "order_id": order_id
+        "payment_url": payment_url,
+        "status": "success"
     }
 
 

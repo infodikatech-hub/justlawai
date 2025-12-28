@@ -1,5 +1,5 @@
 /**
- * JustLaw Payment Service
+ * JustLaw Payment Service (v1.0.1)
  * Shopier entegrasyonu ve ödeme işlemleri
  */
 

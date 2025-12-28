@@ -3,7 +3,7 @@
  * Offline caching ve PWA desteği
  */
 
-const CACHE_NAME = 'justlaw-v1.0.0';
+const CACHE_NAME = 'justlaw-v1.0.1';
 const STATIC_ASSETS = [
     '/',
     '/index.html',

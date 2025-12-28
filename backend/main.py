@@ -859,7 +859,7 @@ async def create_payment(request: dict):
             <input type="hidden" name="random_nr" value="{random_nr}">
             <input type="hidden" name="signature" value="{signature}">
             <input type="hidden" name="return_url" value="https://justlaw.com.tr/app.html">
-            <input type="hidden" name="modul_version" value="1.0.4">
+            <input type="hidden" name="modul_version" value="1.0.9">
         </form>
     </body>
     </html>

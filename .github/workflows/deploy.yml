@@ -23,10 +23,12 @@ jobs:
 
       - name: Install Dependencies and Create Venv
         run: |
-          python -m venv functions/venv
-          functions/venv/bin/pip install --upgrade pip
-          functions/venv/bin/pip install firebase-functions firebase-admin
-          functions/venv/bin/pip install -r functions/requirements.txt
+          cd functions
+          python -m venv venv
+          ./venv/bin/pip install --upgrade pip
+          ./venv/bin/pip install firebase-functions firebase-admin
+          ./venv/bin/pip install -r requirements.txt
+          cd ..
 
       - name: Install Firebase CLI
         run: npm install -g firebase-tools

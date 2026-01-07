@@ -21,10 +21,18 @@ jobs:
           cd functions
           pip install -r requirements.txt
 
-      - name: Deploy to Firebase
-        uses: firebase/firebase-tools-actions@v0
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          args: deploy --only functions
+          node-version: '20'
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Create SA Key
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_JUSTLAWAI }}' > service-account.json
+
+      - name: Deploy to Firebase
+        run: firebase deploy --only functions --project justlawai
         env:
-          FIREBASE_SERVICE_ACCOUNT_JUSTLAWAI: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JUSTLAWAI }}
-          PROJECT_ID: justlawai
+          GOOGLE_APPLICATION_CREDENTIALS: service-account.json

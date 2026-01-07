@@ -19,7 +19,10 @@ jobs:
       - name: Install Backend Dependencies
         run: |
           cd functions
+          python -m venv venv
+          source venv/bin/activate || venv/Scripts/activate
           pip install -r requirements.txt
+          pip install firebase-functions
 
       - name: Set up Node.js
         uses: actions/setup-node@v4

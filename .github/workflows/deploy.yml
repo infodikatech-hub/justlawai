@@ -21,12 +21,12 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Dependencies and Create Venv
+      - name: Prepare Firebase Functions
         run: |
           cd functions
-          python -m venv venv
+          python3 -m venv venv
           ./venv/bin/pip install --upgrade pip
-          ./venv/bin/pip install firebase-functions firebase-admin
+          ./venv/bin/pip install firebase-functions>=0.5.0 firebase-admin
           ./venv/bin/pip install -r requirements.txt
           cd ..
 
@@ -37,6 +37,6 @@ jobs:
         run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_JUSTLAWAI }}' > service-account.json
 
       - name: Deploy to Firebase
-        run: firebase deploy --only functions --project justlawai
+        run: firebase deploy --only functions --project justlawai --debug
         env:
           GOOGLE_APPLICATION_CREDENTIALS: service-account.json

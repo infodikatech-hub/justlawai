@@ -8,7 +8,6 @@
         "codebase": "default",
         "runtime": "python311",
         "ignore": [
-            "venv",
             ".git",
             "firebase-debug.log",
             "firebase-debug.*.log"

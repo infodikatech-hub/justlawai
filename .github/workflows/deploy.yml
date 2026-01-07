@@ -21,12 +21,12 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Backend Dependencies
+      - name: Install Dependencies and Create Venv
         run: |
           python -m venv functions/venv
           functions/venv/bin/pip install --upgrade pip
-          functions/venv/bin/pip install -r functions/requirements.txt
           functions/venv/bin/pip install firebase-functions firebase-admin
+          functions/venv/bin/pip install -r functions/requirements.txt
 
       - name: Install Firebase CLI
         run: npm install -g firebase-tools

@@ -102,17 +102,11 @@ export async function activateTrialAccount() {
             email: user.email,
             name: user.displayName || 'Kullanıcı',
             createdAt: serverTimestamp(),
-            plan: 'trial',
-            trialStartDate: Timestamp.fromDate(now),
-            trialEndDate: Timestamp.fromDate(trialEnd),
+            plan: 'free',
+            trialStartDate: null,
+            trialEndDate: null,
             premiumEndDate: null,
-            usageLimits: {
-                questionsToday: 0,
-                questionsLastReset: Timestamp.fromDate(now),
-                dilekceThisMonth: 0,
-                sozlesmeThisMonth: 0,
-                monthlyResetDate: Timestamp.fromDate(now)
-            }
+            usageLimits: null // Sınırsız
         });
 
         console.log('[Auth] Trial activated for:', user.uid);
@@ -175,17 +169,11 @@ export async function loginWithGoogle() {
                 email: user.email,
                 name: user.displayName || 'Kullanıcı',
                 createdAt: serverTimestamp(),
-                plan: 'trial',
-                trialStartDate: Timestamp.fromDate(now),
-                trialEndDate: Timestamp.fromDate(trialEnd),
+                plan: 'free',
+                trialStartDate: null,
+                trialEndDate: null,
                 premiumEndDate: null,
-                usageLimits: {
-                    questionsToday: 0,
-                    questionsLastReset: Timestamp.fromDate(now),
-                    dilekceThisMonth: 0,
-                    sozlesmeThisMonth: 0,
-                    monthlyResetDate: Timestamp.fromDate(now)
-                }
+                usageLimits: null // Sınırsız
             });
         }
 

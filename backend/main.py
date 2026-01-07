@@ -126,6 +126,26 @@ class SozlesmeAnaliz(BaseModel):
     icerik: str
     user_id: str
 
+# ============== HELPERS ==============
+
+async def increment_user_stat(user_id: str, field: str):
+    """
+    Kullanıcı istatistiğini artırır.
+    """
+    if not user_id or user_id == "anonymous":
+        return
+        
+    try:
+        db = firestore.client()
+        user_ref = db.collection("users").document(user_id)
+        # Atomik increment işlemi
+        user_ref.update({
+            field: firestore.Increment(1)
+        })
+        print(f"Stat incremented: {field} for {user_id}")
+    except Exception as e:
+        print(f"Stat increment error: {e}")
+
 # ============== ROUTES ==============
 
 @app.get("/")
@@ -193,6 +213,9 @@ Dilekçe resmi formatta olmalı ve Türk Hukuku standartlarına uygun olmalıdı
 
         response_text = generate_ai_content(dilekce_prompt)
         
+        # Track usage
+        await increment_user_stat(request.user_id, "petition_count")
+
         return {
             "status": "success",
             "dilekce": response_text,
@@ -273,6 +296,10 @@ Sözleşme İçeriği:
 
         response_text = generate_ai_content(analiz_prompt)
         
+        # Track usage
+        if user_id != "anonymous":
+             await increment_user_stat(user_id, "analysis_count")
+
         return {
             "status": "success",
             "analiz": response_text,
@@ -436,6 +463,10 @@ async def search_all_sources(
                 all_results = json.loads(json_match.group())
         except Exception as e:
             print(f"AI fallback error: {e}")
+    
+    # Track usage (Search) - Generic stat update since we don't have user_id here easily without auth middleware
+    # For now, skipping search tracking or need to pass user_id in query params.
+    # Assuming user_id is passed in query params for tracking in future.
     
     return {
         "results": all_results,
@@ -735,88 +766,6 @@ class ShopierPayment:
         
         # Shopier API maalesef standart bir REST API değil, bir Form POST işlemidir.
         # Bu yüzden backend'den ziyade frontend'den form submit etmek veya backend'den HTML dönmek gerekir.
-        # Ancak modern entegrasyonda genellikle bir link oluşturulur.
-        
-        # Biz burada basitçe link oluşturma mantığını simüle edeceğiz veya 
-        # eğer API anahtarları varsa gerçek imzayı oluşturacağız.
-        
-        # NOT: Shopier'in sunduğu Python kütüphanesi yok, PHP örnekleri var.
-        # Basit entegrasyon için genelde bir "Link ile Ödeme" kullanılıyor.
-        
-        # Burada Müşteri'ye sadece Shopier Mağaza Linki'ni veya
-        # varsa API ile oluşturulmuş özel ödeme sayfasını döneceğiz.
-        
-        # Gerçek API entegrasyonu karmaşık olduğu ve test edilemediği için
-        # Şimdilik Shopier Mağaza Linki yapısını kullanacağız.
-        # Örn: https://www.shopier.com/ShowProduct/api_pay4.php?id=...
-        
-        # Kullanıcının verdiği bilgiye göre: "mock yapmaya gerek yok şu an entegre edebiliriz"
-        # Bu durumda ENV'den alınan linki veya sabit bir linki kullanacağız.
-        
-        shopier_link = os.getenv("SHOPIER_LINK", "https://www.shopier.com/ShowProduct/api_pay4.php")
-        return f"{shopier_link}?order_id={order_id}&amount={amount}&email={user_email}"
-
-@app.post("/api/payment/create")
-async def create_payment(request: dict):
-    """
-    Shopier ödeme linki oluşturur (Manuel Yönlendirme).
-    """
-    plan_type = request.get("plan_type", "professional")
-    
-    # Kullanıcı tarafından sağlanan manuel Shopier ürün linkleri
-    links = {
-        "professional": "https://www.shopier.com/justlawai/42631931",
-        "enterprise": "https://www.shopier.com/justlawai/42631944"
-    }
-    
-    payment_url = links.get(plan_type, links["professional"])
-    
-    return {
-        "payment_url": payment_url,
-        "status": "success"
-    }
-
-
-@app.post("/api/payment/callback")
-async def payment_callback(request: Request):
-    """
-    Verifies the payment and updates user status.
-    """
-    try:
-        data = await request.form()
-        
-        status = data.get("status")
-        order_id = data.get("platform_order_id")
-        user_id = data.get("buyer_account_number")
-        incoming_signature = data.get("signature")
-        random_nr = data.get("random_nr")
-        
-        # Verify Signature (Hardcoded secret as requested)
-        api_secret = "93f8a73b9a0cbf1e7b0a001e1702a992"
-        data_to_verify = f"{random_nr}{order_id}"
-        expected_signature = base64.b64encode(hmac.new(api_secret.encode('utf-8'), data_to_verify.encode('utf-8'), hashlib.sha256).digest()).decode('utf-8')
-        
-        if incoming_signature != expected_signature:
-            print(f"WARNING: Invalid signature from Shopier. Got {incoming_signature}, expected {expected_signature}")
-            # In a real scenario, you'd reject this. For now, we'll log it.
-        
-        if status == "success":
-            print(f"Payment Success for user: {user_id}")
-            
-            # Update Firestore
-            import firebase_admin
-            from firebase_admin import firestore
-            
-            db = firestore.client()
-            user_ref = db.collection("users").document(user_id)
-            
-            import datetime
-            new_end_date = datetime.datetime.now() + datetime.timedelta(days=30)
-            
-            user_ref.update({
-                "plan": "professional",
-                "premiumEndDate": new_end_date.isoformat(),
-                "planStatus": "active"
             })
             
             return "OK"

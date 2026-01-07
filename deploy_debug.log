@@ -1,0 +1,39 @@
+[2026-01-05T21:34:28.504Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[2026-01-05T21:34:28.505Z] > authorizing via signed-in user (infodikatech@gmail.com)
+[2026-01-05T21:34:28.505Z] [iam] checking project justlawai for permissions ["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]
+[2026-01-05T21:34:28.507Z] Checked if tokens are valid: true, expires at: 1767651297823
+[2026-01-05T21:34:28.507Z] Checked if tokens are valid: true, expires at: 1767651297823
+[2026-01-05T21:34:28.508Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/justlawai:testIamPermissions [none]
+[2026-01-05T21:34:28.508Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/justlawai:testIamPermissions x-goog-quota-user=projects/justlawai
+[2026-01-05T21:34:28.508Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/justlawai:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]}
+[2026-01-05T21:34:29.045Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/justlawai:testIamPermissions 200
+[2026-01-05T21:34:29.045Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/justlawai:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]}
+[2026-01-05T21:34:29.045Z] Checked if tokens are valid: true, expires at: 1767651297823
+[2026-01-05T21:34:29.045Z] Checked if tokens are valid: true, expires at: 1767651297823
+[2026-01-05T21:34:29.045Z] >>> [apiv2][query] POST https://iam.googleapis.com/v1/projects/justlawai/serviceAccounts/justlawai@appspot.gserviceaccount.com:testIamPermissions [none]
+[2026-01-05T21:34:29.045Z] >>> [apiv2][body] POST https://iam.googleapis.com/v1/projects/justlawai/serviceAccounts/justlawai@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[2026-01-05T21:34:40.286Z] *** [apiv2] error from fetch(https://iam.googleapis.com/v1/projects/justlawai/serviceAccounts/justlawai@appspot.gserviceaccount.com:testIamPermissions, {"headers":{},"method":"POST","body":"{\"permissions\":[\"iam.serviceAccounts.actAs\"]}"}): FetchError: request to https://iam.googleapis.com/v1/projects/justlawai/serviceAccounts/justlawai@appspot.gserviceaccount.com:testIamPermissions failed, reason: getaddrinfo ENOTFOUND iam.googleapis.com
+[2026-01-05T21:34:40.286Z] [functions] service account IAM check errored, deploy may fail: Failed to make request to https://iam.googleapis.com/v1/projects/justlawai/serviceAccounts/justlawai@appspot.gserviceaccount.com:testIamPermissions {"name":"FirebaseError","children":[],"exit":1,"message":"Failed to make request to https://iam.googleapis.com/v1/projects/justlawai/serviceAccounts/justlawai@appspot.gserviceaccount.com:testIamPermissions","original":{"message":"request to https://iam.googleapis.com/v1/projects/justlawai/serviceAccounts/justlawai@appspot.gserviceaccount.com:testIamPermissions failed, reason: getaddrinfo ENOTFOUND iam.googleapis.com","type":"system","errno":"ENOTFOUND","code":"ENOTFOUND"},"status":500}
+
+=== Deploying to 'justlawai'...
+
+i  deploying functions 
+[2026-01-05T21:34:40.290Z] Checked if tokens are valid: true, expires at: 1767651297823
+[2026-01-05T21:34:40.290Z] Checked if tokens are valid: true, expires at: 1767651297823
+[2026-01-05T21:34:40.290Z] >>> [apiv2][query] GET https://cloudresourcemanager.googleapis.com/v1/projects/justlawai [none]
+[2026-01-05T21:34:41.443Z] <<< [apiv2][status] GET https://cloudresourcemanager.googleapis.com/v1/projects/justlawai 200
+[2026-01-05T21:34:41.444Z] <<< [apiv2][body] GET https://cloudresourcemanager.googleapis.com/v1/projects/justlawai {"projectNumber":"792593302800","projectId":"justlawai","lifecycleState":"ACTIVE","name":"justlawai","labels":{"firebase":"enabled","firebase-core":"disabled"},"createTime":"2025-12-21T15:22:54.498418Z"}
+i  functions: preparing codebase default for deployment 
+i  functions: ensuring required API cloudfunctions.googleapis.com is enabled... 
+i  functions: ensuring required API cloudbuild.googleapis.com is enabled... 
+i  artifactregistry: ensuring required API artifactregistry.googleapis.com is enabled... 
+[2026-01-05T21:34:41.446Z] Checked if tokens are valid: true, expires at: 1767651297823
+[2026-01-05T21:34:41.446Z] Checked if tokens are valid: true, expires at: 1767651297823
+[2026-01-05T21:34:41.446Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/justlawai/adminSdkConfig [none]
+[2026-01-05T21:34:52.671Z] *** [apiv2] error from fetch(https://firebase.googleapis.com/v1beta1/projects/justlawai/adminSdkConfig, {"headers":{},"method":"GET"}): FetchError: request to https://firebase.googleapis.com/v1beta1/projects/justlawai/adminSdkConfig failed, reason: getaddrinfo ENOTFOUND firebase.googleapis.com
+[2026-01-05T21:34:57.686Z] Error: Timed out.
+    at Timeout._onTimeout (C:\Users\kadir\AppData\Roaming\npm\node_modules\firebase-tools\lib\utils.js:275:49)
+    at listOnTimeout (node:internal/timers:608:17)
+    at process.processTimers (node:internal/timers:543:7)
+
+Error: An unexpected error has occurred.

@@ -204,7 +204,6 @@ function showUpdateNotification() {
 async function initAuth() {
     try {
         authModule = await import('./auth.js');
-        subscriptionModule = await import('./subscription.js');
         console.log('[App] Auth modules loaded');
 
         // Listen for auth state changes
@@ -258,23 +257,7 @@ function updateUserUI(isLoggedIn) {
         const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
         // Get plan info
-        let planBadge = '';
-        if (userData) {
-            const now = new Date();
-            if (userData.plan === 'trial') {
-                const trialEnd = userData.trialEndDate?.toDate();
-                if (trialEnd && trialEnd > now) {
-                    const daysLeft = Math.ceil((trialEnd - now) / (1000 * 60 * 60 * 24));
-                    planBadge = `<span class="plan-badge trial">🎁 Deneme (${daysLeft} gün)</span>`;
-                } else {
-                    planBadge = `<span class="plan-badge expired">⚠️ Süresi Doldu</span>`;
-                }
-            } else if (userData.plan === 'professional') {
-                planBadge = `<span class="plan-badge premium">💎 Premium</span>`;
-            } else if (userData.plan === 'enterprise') {
-                planBadge = `<span class="plan-badge enterprise">🏢 Kurumsal</span>`;
-            }
-        }
+        let planBadge = `<span class="plan-badge premium">💎 Ücretsiz Plan</span>`;
 
         // Create user info section
         const userSection = document.createElement('div');
@@ -359,6 +342,17 @@ async function sendMessage() {
     sendBtn.disabled = true;
     const loadingDiv = addLoadingMessage();
 
+    // Add User Message to History immediately
+    const timestamp = new Date();
+    if (currentUser) {
+        saveMessageToFirestore({
+            text: message,
+            sender: 'user',
+            timestamp: timestamp,
+            conversation_id: conversationId
+        });
+    }
+
     try {
         const userId = currentUser ? currentUser.uid : 'anonymous';
 
@@ -389,8 +383,15 @@ async function sendMessage() {
         addMessage(data.response, 'assistant');
         conversationId = data.conversation_id;
 
-        // Save to history
-        saveChatHistory();
+        // Save AI response to history
+        if (currentUser) {
+            saveMessageToFirestore({
+                text: data.response,
+                sender: 'assistant',
+                timestamp: new Date(),
+                conversation_id: conversationId
+            });
+        }
 
     } catch (error) {
         console.error('Error:', error);
@@ -1665,9 +1666,51 @@ function handleKeyDown(event) {
 
 function autoResize(textarea) {
     if (!textarea) return;
-    textarea.style.height = 'auto';
-    textarea.style.height = Math.min(textarea.scrollHeight, 150) + 'px';
+    textarea.style.height = 'auto'; // Reset height
+    textarea.style.height = textarea.scrollHeight + 'px'; // Set new height
 }
+
+// ============== CHAT HISTORY FUNCTIONS ==============
+
+async function saveMessageToFirestore(msgData) {
+    if (!currentUser) return;
+
+    try {
+        const { getFirestore, collection, addDoc, serverTimestamp } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+        const db = getFirestore();
+
+        // Ensure conversation ID exists or create new
+        const convId = msgData.conversation_id || 'default';
+
+        await addDoc(collection(db, "users", currentUser.uid, "conversations", convId, "messages"), {
+            text: msgData.text,
+            sender: msgData.sender,
+            timestamp: serverTimestamp()
+        });
+
+    } catch (e) {
+        console.error("Error saving message:", e);
+    }
+}
+
+async function loadChatHistory() {
+    if (!currentUser) return;
+
+    try {
+        const { getFirestore, collection, query, orderBy, limit, getDocs } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+        const db = getFirestore();
+
+        // This is a placeholder for loading specific conversation history
+        // Real implementation depends on how we manage conversation IDs in UI (sidebar list etc.)
+        console.log("Chat history loading not fully implemented UI-wise yet.");
+
+    } catch (e) {
+        console.error("Error loading history:", e);
+    }
+}
+
+// Expose globally
+window.loadChatHistory = loadChatHistory;
 
 function saveChatHistory() {
     if (conversationId && messages.length > 0) {
